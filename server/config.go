@@ -22,7 +22,7 @@ type Config struct {
 
 	// HTTP
 	ReadTimeout  time.Duration `envconfig:"READ_TIMEOUT" default:"30s"`
-	WriteTimeout time.Duration `envconfig:"WRITE_TIMEOUT"`
+	WriteTimeout time.Duration `envconfig:"WRITE_TIMEOUT" default:"30s"`
 
 	// Needs to be set manually
 	Auth          Authenticator

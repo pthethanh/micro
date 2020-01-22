@@ -19,13 +19,13 @@ I expect micro requires no more than 15 minutes for a beginner/intermediate deve
 
 micro is inspired by [go-kit](<https://github.com/go-kit/kit>). go-kit is a good tool kit, but one of the thing I don't like go-kit is its over use of interface{} which cause a lot of unnecessary type conversions and some of other abstractions in the libraries which are not compatible with Go native libraries.
 
-Although go-kit is very flexible, it's a little bit hard to use for beginner/intermediate developers. And developers need to learn a lot from their options to decide what to go with.
+Although go-kit is very flexible, it's a little bit hard to use for beginner/intermediate developers. It has a lot of options for developers to choose and hence hard to force everyone inside a company to use the same set of standards.
 
 Those reasons go against with my vision for micro, and this is the main reason I want to build micro.
 
 ## What in the early micro?
 
-micro is now in the experiment stage and currently supports gRPC only, but supports for HTTP will come soon.
+micro is now in the experiment stage and currently built around gRPC. It exposes both gRPC and REST API over 1 single port.
 
 In this early experiment, I want to explore below things:
 

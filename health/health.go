@@ -22,7 +22,7 @@ func Ready() {
 }
 
 // Readiness returns an HTTP handler for checking Readiness state.
-// Will return 503 untill Ready() is called
+// Will return 503 until Ready() is called
 func Readiness() http.Handler {
 	ok := []byte("OK")
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
