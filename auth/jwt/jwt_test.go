@@ -38,7 +38,7 @@ func TestAuthenticator(t *testing.T) {
 	fn := Authenticator(secret)
 	claims := Claims{
 		Scope:    "foo bar foobar",
-		Username: "my username",
+		UserID:   "my username",
 		ClientID: "clientID",
 	}
 	token, err := Encode(claims, secret)

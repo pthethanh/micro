@@ -71,7 +71,11 @@ func ListenAndServeContext(ctx context.Context, conf *Config, services ...Servic
 		streamInterceptors = append(streamInterceptors, auth.StreamInterceptor(conf.Auth))
 		unaryInterceptors = append(unaryInterceptors, auth.UnaryInterceptor(conf.Auth))
 	}
-
+	if conf.EnableContextLogger {
+		logger := log.New(log.Fields{"address": conf.Address})
+		streamInterceptors = append(streamInterceptors, log.StreamInterceptor(logger))
+		unaryInterceptors = append(unaryInterceptors, log.UnaryInterceptor(logger))
+	}
 	if len(streamInterceptors) > 0 {
 		opts = append(opts, grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(streamInterceptors...)))
 	}
@@ -87,7 +91,11 @@ func ListenAndServeContext(ctx context.Context, conf *Config, services ...Servic
 		opts = append(opts, grpc.Creds(creds))
 	}
 	grpcServer := grpc.NewServer(opts...)
-	gwMux := runtime.NewServeMux()
+	muxOpts := conf.ServeMuxOptions
+	if len(muxOpts) == 0 {
+		muxOpts = []runtime.ServeMuxOption{DefaultHeaderMatcher()}
+	}
+	gwMux := runtime.NewServeMux(muxOpts...)
 	mux := http.NewServeMux()
 
 	dialOpts := make([]grpc.DialOption, 0)

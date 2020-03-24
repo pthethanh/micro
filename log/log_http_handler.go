@@ -15,7 +15,7 @@ func NewHTTPContextHandler(l Logger) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
 			// allow requests in microservices environment can be traced.
-			requestID := r.Header.Get("request_id")
+			requestID := r.Header.Get("request-id")
 			if requestID == "" {
 				requestID = uuid.New().String()
 			}

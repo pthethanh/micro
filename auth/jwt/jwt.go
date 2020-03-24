@@ -25,9 +25,11 @@ var (
 // Claims represents the claims provided by the JWT.
 type Claims struct {
 	Scope     string `json:"scope,omitempty"`
-	Username  string `json:"username,omitempty"`
+	UserID    string `json:"user_id,omitempty"`
 	ClientID  string `json:"client_id,omitempty"`
 	TokenType string `json:"token_type,omitempty"`
+	AvatarURL string `json:"avatar_url"`
+	FullName  string `json:"full_name"`
 
 	// Once we have service-accounts in place, this should be removed.
 	// Its up to each service to decide how they would like to handle
