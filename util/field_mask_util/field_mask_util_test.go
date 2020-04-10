@@ -3,7 +3,7 @@ package field_mask_util_test
 import (
 	"testing"
 
-	"gitlab.com/akoala/micro/util/field_mask_util"
+	"github.com/pthethanh/micro/util/field_mask_util"
 )
 
 type (
