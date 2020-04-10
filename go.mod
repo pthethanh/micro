@@ -19,6 +19,7 @@ require (
 	github.com/prometheus/client_golang v1.5.0
 	github.com/sirupsen/logrus v1.4.2
 	golang.org/x/net v0.0.0-20200301022130-244492dfa37a
+	google.golang.org/genproto v0.0.0-20190927181202-20e1ac93f88c
 	google.golang.org/grpc v1.27.1
 	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
 )

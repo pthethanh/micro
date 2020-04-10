@@ -26,18 +26,18 @@ import (
 type (
 	// Server holds the configuration options for the server instance.
 	Server struct {
-		address     string `envconfig:"ADDRESS" default:":8000"`
-		tlsCertFile string `envconfig:"TLS_CERT_FILE"`
-		tlsKeyFile  string `envconfig:"TLS_KEY_FILE"`
+		address     string
+		tlsCertFile string
+		tlsKeyFile  string
 
 		// Paths
-		livenessPath  string `envconfig:"LIVENESS_PATH" default:"/internal/liveness"`
-		readinessPath string `envconfig:"READINESS_PATH" default:"/internal/readiness"`
-		metricsPath   string `envconfig:"METRICS_PATH" default:"/internal/metrics"`
+		livenessPath  string
+		readinessPath string
+		metricsPath   string
 
 		// HTTP
-		readTimeout  time.Duration `envconfig:"READ_TIMEOUT" default:"30s"`
-		writeTimeout time.Duration `envconfig:"WRITE_TIMEOUT" default:"30s"`
+		readTimeout  time.Duration
+		writeTimeout time.Duration
 
 		// Needs to be set manually
 		healthChecks    []health.CheckFunc
@@ -138,10 +138,9 @@ func (server *Server) ListenAndServeContext(ctx context.Context, services ...Ser
 		log.WithContext(ctx).Warn("server: insecured mode is enabled.")
 		dialOpts = append(dialOpts, grpc.WithInsecure())
 	}
-	for i, s := range services {
+	for _, s := range services {
 		s.Register(grpcServer)
 		if epSrv, ok := s.(EndpointService); ok {
-			log.WithContext(ctx).Infof("server: register HTTP endpoints for service %d", i)
 			epSrv.RegisterWithEndpoint(ctx, gwMux, server.address, dialOpts)
 		}
 	}

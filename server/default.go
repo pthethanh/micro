@@ -37,6 +37,10 @@ type (
 func NewFromEnv() *Server {
 	conf := Config{}
 	envconfig.Read(&conf)
+	return newFromConfig(conf)
+}
+
+func newFromConfig(conf Config) *Server {
 	opts := []Option{
 		MetricsPaths(conf.ReadinessPath, conf.LivenessPath, conf.MetricsPath),
 		TLS(conf.TLSKeyFile, conf.TLSCertFile),

@@ -38,3 +38,8 @@ In this early experiment, I want to explore below things:
   - Configuration
 - Default, ready to use metrics for Prometheus
 - API document: Swagger
+
+## Documentation
+
+- See [doc](https://pkg.go.dev/mod/github.com/pthethanh/micro) for package and API descriptions.
+- Examples can be found in the [examples](https://github.com/pthethanh/micro/tree/master/examples) directory.
