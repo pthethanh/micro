@@ -8,11 +8,11 @@ import (
 	"strings"
 )
 
-// HealthCheck return a CheckFunc for checking if the target server is OK or not.
+// Check return a CheckFunc for checking if the target server is OK or not.
 // The target server can be considered OK, if its return status code is "200 OK".
 // If the given addr is in simple form of "server:port", it will be transformed to
 // http://server:port/internal/liveness
-func HealthCheck(name string, addr string) CheckFunc {
+func Check(name string, addr string) CheckFunc {
 	target := addr
 	if !strings.HasPrefix(addr, "http") {
 		target = "http://" + addr + "/internal/liveness"

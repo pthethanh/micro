@@ -8,8 +8,8 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
-	"github.com/pthethanh/micro/auth"
 	"github.com/pthethanh/micro/health"
 	"github.com/pthethanh/micro/log"
 	"golang.org/x/net/http2"
@@ -24,6 +24,34 @@ import (
 )
 
 type (
+	// Server holds the configuration options for the server instance.
+	Server struct {
+		address     string `envconfig:"ADDRESS" default:":8000"`
+		tlsCertFile string `envconfig:"TLS_CERT_FILE"`
+		tlsKeyFile  string `envconfig:"TLS_KEY_FILE"`
+
+		// Paths
+		livenessPath  string `envconfig:"LIVENESS_PATH" default:"/internal/liveness"`
+		readinessPath string `envconfig:"READINESS_PATH" default:"/internal/readiness"`
+		metricsPath   string `envconfig:"METRICS_PATH" default:"/internal/metrics"`
+
+		// HTTP
+		readTimeout  time.Duration `envconfig:"READ_TIMEOUT" default:"30s"`
+		writeTimeout time.Duration `envconfig:"WRITE_TIMEOUT" default:"30s"`
+
+		// Needs to be set manually
+		healthChecks    []health.CheckFunc
+		serverOptions   []grpc.ServerOption
+		serveMuxOptions []runtime.ServeMuxOption
+
+		// Interceptors
+		streamInterceptors []grpc.StreamServerInterceptor
+		unaryInterceptors  []grpc.UnaryServerInterceptor
+	}
+
+	// Option is a configuration option.
+	Option func(*Server)
+
 	// Service implements a registration interface for services to attach
 	// themselves to the grpc.Server.
 	Service interface {
@@ -47,51 +75,51 @@ type (
 	}
 )
 
-// ListenAndServe opens a tcp listener used by the grpc.Server, and registers
-// each Service with the grpc.Server.
-func ListenAndServe(conf *Config, services ...Service) error {
-	return ListenAndServeContext(context.Background(), conf, services...)
+// New return new server
+func New(addr string, ops ...Option) *Server {
+	server := &Server{
+		address: addr,
+	}
+	for _, op := range ops {
+		op(server)
+	}
+	return server
+}
+
+// ListenAndServe call ListenAndServeContext with background context.
+func (server *Server) ListenAndServe(services ...Service) error {
+	return server.ListenAndServeContext(context.Background(), services...)
 }
 
 // ListenAndServeContext opens a tcp listener used by a grpc.Server and a HTTP server,
 // and registers each Service with the grpc.Server. If the Service implements EndpointService
 // its endpoints will be registered to the HTTP Server running on the same port.
+// The server starts with default metrics and health endpoints.
 // If the context is canceled or times out, the GRPC server will attempt a graceful shutdown.
-func ListenAndServeContext(ctx context.Context, conf *Config, services ...Service) error {
-	lis, err := net.Listen("tcp", conf.Address)
+func (server *Server) ListenAndServeContext(ctx context.Context, services ...Service) error {
+	lis, err := net.Listen("tcp", server.address)
 	if err != nil {
 		return err
 	}
-	opts := conf.ServerOptions
-	streamInterceptors := []grpc.StreamServerInterceptor{grpc_prometheus.StreamServerInterceptor}
-	unaryInterceptors := []grpc.UnaryServerInterceptor{grpc_prometheus.UnaryServerInterceptor}
-	isSecured := conf.TLSCertFile != "" && conf.TLSKeyFile != ""
+	server.streamInterceptors = append(server.streamInterceptors, grpc_prometheus.StreamServerInterceptor)
+	server.unaryInterceptors = append(server.unaryInterceptors, grpc_prometheus.UnaryServerInterceptor)
+	isSecured := server.tlsCertFile != "" && server.tlsKeyFile != ""
 
-	if conf.Auth != nil {
-		streamInterceptors = append(streamInterceptors, auth.StreamInterceptor(conf.Auth))
-		unaryInterceptors = append(unaryInterceptors, auth.UnaryInterceptor(conf.Auth))
+	if len(server.streamInterceptors) > 0 {
+		server.serverOptions = append(server.serverOptions, grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(server.streamInterceptors...)))
 	}
-	if conf.EnableContextLogger {
-		logger := log.New(log.Fields{"address": conf.Address})
-		streamInterceptors = append(streamInterceptors, log.StreamInterceptor(logger))
-		unaryInterceptors = append(unaryInterceptors, log.UnaryInterceptor(logger))
-	}
-	if len(streamInterceptors) > 0 {
-		opts = append(opts, grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(streamInterceptors...)))
-	}
-
-	if len(unaryInterceptors) > 0 {
-		opts = append(opts, grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(unaryInterceptors...)))
+	if len(server.unaryInterceptors) > 0 {
+		server.serverOptions = append(server.serverOptions, grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(server.unaryInterceptors...)))
 	}
 	if isSecured {
-		creds, err := credentials.NewServerTLSFromFile(conf.TLSCertFile, conf.TLSKeyFile)
+		creds, err := credentials.NewServerTLSFromFile(server.tlsCertFile, server.tlsKeyFile)
 		if err != nil {
 			return err
 		}
-		opts = append(opts, grpc.Creds(creds))
+		server.serverOptions = append(server.serverOptions, grpc.Creds(creds))
 	}
-	grpcServer := grpc.NewServer(opts...)
-	muxOpts := conf.ServeMuxOptions
+	grpcServer := grpc.NewServer(server.serverOptions...)
+	muxOpts := server.serveMuxOptions
 	if len(muxOpts) == 0 {
 		muxOpts = []runtime.ServeMuxOption{DefaultHeaderMatcher()}
 	}
@@ -100,7 +128,7 @@ func ListenAndServeContext(ctx context.Context, conf *Config, services ...Servic
 
 	dialOpts := make([]grpc.DialOption, 0)
 	if isSecured {
-		creds, err := credentials.NewClientTLSFromFile(conf.TLSCertFile, "")
+		creds, err := credentials.NewClientTLSFromFile(server.tlsCertFile, "")
 		if err != nil {
 			return err
 		}
@@ -114,7 +142,7 @@ func ListenAndServeContext(ctx context.Context, conf *Config, services ...Servic
 		s.Register(grpcServer)
 		if epSrv, ok := s.(EndpointService); ok {
 			log.WithContext(ctx).Infof("server: register HTTP endpoints for service %d", i)
-			epSrv.RegisterWithEndpoint(ctx, gwMux, conf.Address, dialOpts)
+			epSrv.RegisterWithEndpoint(ctx, gwMux, server.address, dialOpts)
 		}
 	}
 	// Make sure Prometheus metrics are initialized.
@@ -122,24 +150,24 @@ func ListenAndServeContext(ctx context.Context, conf *Config, services ...Servic
 
 	// Attach HTTP handlers
 	mux.Handle("/", gwMux)
-	mux.Handle(conf.ReadinessPath, health.Readiness())
-	mux.Handle(conf.LivenessPath, health.Liveness(conf.HealthChecks...))
-	mux.Handle(conf.MetricsPath, promhttp.Handler())
+	mux.Handle(server.getReadinessPath(), health.Readiness())
+	mux.Handle(server.getLivenessPath(), health.Liveness(server.healthChecks...))
+	mux.Handle(server.getMetricsPath(), promhttp.Handler())
 
 	errChan := make(chan error, 1)
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, os.Kill, syscall.SIGTERM, syscall.SIGKILL)
 
 	httpServer := &http.Server{
-		Addr:         conf.Address,
+		Addr:         server.address,
 		Handler:      grpcHandlerFunc(isSecured, grpcServer, mux),
-		ReadTimeout:  conf.ReadTimeout,
-		WriteTimeout: conf.WriteTimeout,
+		ReadTimeout:  server.readTimeout,
+		WriteTimeout: server.writeTimeout,
 	}
 
 	go func() {
 		if isSecured {
-			errChan <- httpServer.ServeTLS(lis, conf.TLSCertFile, conf.TLSKeyFile)
+			errChan <- httpServer.ServeTLS(lis, server.tlsCertFile, server.tlsKeyFile)
 			return
 		}
 		errChan <- httpServer.Serve(lis)
@@ -188,4 +216,32 @@ func grpcHandlerFunc(isSecured bool, grpcServer *grpc.Server, mux http.Handler) 
 			mux.ServeHTTP(w, r)
 		}
 	}), &http2.Server{})
+}
+
+func (server Server) getReadinessPath() string {
+	if server.readinessPath == "" {
+		return "/internal/readiness"
+	}
+	return server.readinessPath
+}
+
+func (server Server) getLivenessPath() string {
+	if server.livenessPath == "" {
+		return "/internal/liveness"
+	}
+	return server.livenessPath
+}
+
+func (server Server) getMetricsPath() string {
+	if server.metricsPath == "" {
+		return "/internal/metrics"
+	}
+	return server.metricsPath
+}
+
+// WithOptions allows add more options to the server after created.
+func (server *Server) WithOptions(opts ...Option) {
+	for _, op := range opts {
+		op(server)
+	}
 }

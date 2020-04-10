@@ -11,6 +11,7 @@ import (
 )
 
 type (
+	// Nats is an implementation of broker.Broker.
 	Nats struct {
 		conn    *nats.Conn
 		encoder broker.Encoder
@@ -29,6 +30,7 @@ func New(conf Config, additionalOpts ...nats.Option) (*Nats, error) {
 	return NewWithEncoder(conf.Addrs, conf.GetEncoder(), opts...)
 }
 
+// NewWithEncoder return a new NATS client with the given encoder.
 func NewWithEncoder(addrs string, enc broker.Encoder, opts ...nats.Option) (*Nats, error) {
 	conn, err := nats.Connect(addrs, opts...)
 	if err != nil {
@@ -40,6 +42,7 @@ func NewWithEncoder(addrs string, enc broker.Encoder, opts ...nats.Option) (*Nat
 	}, nil
 }
 
+// Publish implements broker.Broker interface.
 func (n *Nats) Publish(topic string, m *broker.Message, opts ...broker.PublishOption) error {
 	if n.encoder == nil {
 		return ErrMissingEncoder
@@ -51,6 +54,7 @@ func (n *Nats) Publish(topic string, m *broker.Message, opts ...broker.PublishOp
 	return n.conn.Publish(topic, b)
 }
 
+// Subscribe implements broker.Broker interface.
 func (n *Nats) Subscribe(topic string, h broker.Handler, opts ...broker.SubscribeOption) (broker.Subscriber, error) {
 	if n.encoder == nil {
 		return nil, ErrMissingEncoder

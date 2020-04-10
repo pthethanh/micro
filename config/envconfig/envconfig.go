@@ -11,10 +11,12 @@ import (
 )
 
 type (
+	// Config implements config.Reader.
 	Config struct {
 	}
 )
 
+// Read implements config.Reader interface.
 func (env *Config) Read(ptr interface{}, opts ...config.ReadOption) error {
 	ops := &config.ReadOptions{}
 	ops.Apply(opts...)
@@ -26,10 +28,12 @@ func (env *Config) Read(ptr interface{}, opts ...config.ReadOption) error {
 	return envconfig.Process(ops.Prefix, ptr)
 }
 
+// Close implements config.Reader interface.
 func (env *Config) Close() error {
 	return nil
 }
 
+// FromFile is an option for loading environment variable from a file.
 func FromFile(f string) config.ReadOption {
 	return config.WithPreload(func() error {
 		return loadEnvFromFile(f)

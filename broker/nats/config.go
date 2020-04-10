@@ -9,6 +9,7 @@ import (
 )
 
 type (
+	// Config hold NATS configurations.
 	Config struct {
 		Addrs    string        `envconfig:"NATS_ADDRS" default:"nats:4222"`
 		Encoder  string        `envconfig:"NATS_ENCODER" default:"proto"`
@@ -18,12 +19,14 @@ type (
 	}
 )
 
+// LoadConfigFromEnv load NATS config from environement variables.
 func LoadConfigFromEnv() Config {
 	var conf Config
 	_ = envconfig.Read(&conf)
 	return conf
 }
 
+// GetEncoder return the configured encoder.
 func (conf Config) GetEncoder() broker.Encoder {
 	switch conf.Encoder {
 	case "json":
@@ -33,6 +36,7 @@ func (conf Config) GetEncoder() broker.Encoder {
 	}
 }
 
+// Options return list of nats.Option.
 func (conf Config) Options() []nats.Option {
 	opts := make([]nats.Option, 0)
 	opts = append(opts, nats.Timeout(conf.Timeout))

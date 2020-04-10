@@ -29,11 +29,12 @@ micro is now in the experiment stage and currently built around gRPC. It exposes
 
 In this early experiment, I want to explore below things:
 
-- REST API with HTTP
 - gRPC
 - Default, ready to use middleware:
   - Logging
   - Authentication
   - Authorization
+  - Broker
+  - Configuration
 - Default, ready to use metrics for Prometheus
 - API document: Swagger
