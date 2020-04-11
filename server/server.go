@@ -47,6 +47,8 @@ type (
 		// Interceptors
 		streamInterceptors []grpc.StreamServerInterceptor
 		unaryInterceptors  []grpc.UnaryServerInterceptor
+
+		log log.Logger
 	}
 
 	// Option is a configuration option.
@@ -82,6 +84,9 @@ func New(addr string, ops ...Option) *Server {
 	}
 	for _, op := range ops {
 		op(server)
+	}
+	if server.log == nil {
+		server.log = log.Root()
 	}
 	return server
 }
@@ -135,7 +140,7 @@ func (server *Server) ListenAndServeContext(ctx context.Context, services ...Ser
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(creds))
 	}
 	if !isSecured {
-		log.WithContext(ctx).Warn("server: insecured mode is enabled.")
+		log.Context(ctx).Warn("server: insecured mode is enabled.")
 		dialOpts = append(dialOpts, grpc.WithInsecure())
 	}
 	for _, s := range services {
@@ -184,10 +189,10 @@ func (server *Server) ListenAndServeContext(ctx context.Context, services ...Ser
 	case s := <-sigChan:
 		switch s {
 		case os.Interrupt, syscall.SIGTERM:
-			log.WithContext(ctx).Info("server: gracefully shutdown...")
+			log.Context(ctx).Info("server: gracefully shutdown...")
 			grpcServer.GracefulStop()
 		case os.Kill, syscall.SIGKILL:
-			log.WithContext(ctx).Info("server: kill...")
+			log.Context(ctx).Info("server: kill...")
 			grpcServer.Stop()
 		}
 		// waiting for srv.Serve to return to errChan.

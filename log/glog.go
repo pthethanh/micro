@@ -1,6 +1,7 @@
 package log
 
 import (
+	"context"
 	"io"
 	"log"
 	"os"
@@ -8,6 +9,10 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+)
+
+const (
+	filePrefix = "file://"
 )
 
 type (
@@ -23,15 +28,8 @@ func newGlog() *glog {
 	}
 }
 
-// newGlogWithField return a new glog instance with field
-func newGlogWithField(k, v string) *glog {
-	return &glog{
-		logger: newLogrusEntry().WithField(k, v),
-	}
-}
-
 // newGlogWithFields return a new glog instance with fields
-func newGlogWithFields(fields Fields) *glog {
+func newGlogWithFields(fields logrus.Fields) *glog {
 	return &glog{
 		logger: newLogrusEntry().WithFields(fields),
 	}
@@ -87,18 +85,26 @@ func (g *glog) Panicf(format string, v ...interface{}) {
 	g.logger.Panicf(format, v...)
 }
 
-// WithFields return a new logger with fields
-func (g *glog) WithFields(fields Fields) Logger {
+// WithFields return a new logger with fields.
+func (g *glog) Fields(kv ...interface{}) Logger {
 	return &glog{
-		logger: g.logger.WithFields(logrus.Fields(fields)),
+		logger: g.logger.WithFields(logrus.Fields(fields(kv...))),
 	}
 }
 
-// WithField return a new logger with fields
-func (g *glog) WithField(key string, val interface{}) Logger {
-	return &glog{
-		logger: g.logger.WithField(key, val),
+// Context return new logger from context.
+func (g *glog) Context(ctx context.Context) Logger {
+	if ctx == nil {
+		return g
 	}
+	if logger, ok := ctx.Value(loggerKey).(Logger); ok {
+		kv := make([]interface{}, 0)
+		for k, v := range g.logger.Data {
+			kv = append(kv, k, v)
+		}
+		return logger.Fields(kv...)
+	}
+	return g
 }
 
 func newLogrusEntry() *logrus.Entry {

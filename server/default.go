@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/pthethanh/micro/config/envconfig"
-	"github.com/pthethanh/micro/log"
 )
 
 type (
@@ -47,12 +46,13 @@ func newFromConfig(conf Config) *Server {
 		Timeout(conf.ReadTimeout, conf.WriteTimeout),
 		JWTAuth(conf.JWTSecret),
 	}
+	server := New(conf.Address, opts...)
 	if conf.ContextLogger {
 		// allow request-id to be passed.
 		opts = append(opts, ServeMuxOptions(DefaultHeaderMatcher()))
-		opts = append(opts, Logger(log.WithFields(log.Fields{"service": conf.Name})))
+		opts = append(opts, Logger(server.log.Fields("service", conf.Name)))
 	}
-	return New(conf.Address, opts...)
+	return server
 }
 
 // ListenAndServe create a new server base on environment configuration

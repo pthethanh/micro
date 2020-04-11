@@ -2,6 +2,7 @@ package log
 
 import (
 	"context"
+	"fmt"
 )
 
 type (
@@ -37,50 +38,23 @@ type (
 		// Panic panic.
 		Panic(v ...interface{})
 
-		WithField(key string, val interface{}) Logger
+		// Fields return new logger with the given fields.
+		// The kv should be provided as key values pairs where key is a string.
+		Fields(kv ...interface{}) Logger
 
-		WithFields(fields Fields) Logger
+		// Context provide a way to get a context logger,  i.e... with request-id.
+		Context(ctx context.Context) Logger
 	}
-	// Fields is alias of map
-	Fields = map[string]interface{}
 
 	// context key
 	contextKey string
 )
 
 const (
-	loggerKey  contextKey = contextKey("logger_key")
-	filePrefix            = "file://"
+	loggerKey contextKey = contextKey("logger_key")
 )
 
-var (
-	root Logger
-)
-
-// Root return default logger instance
-func Root() Logger {
-	if root == nil {
-		root = newGlog()
-	}
-	return root
-}
-
-// Init init the root logger with fields
-func Init(fields Fields) {
-	root = newGlogWithFields(fields)
-}
-
-// NewWithPrefix return new logger with context
-func NewWithPrefix(key, val string) Logger {
-	return newGlogWithField(key, val)
-}
-
-// New return new logger with context
-func New(ctx Fields) Logger {
-	return newGlogWithFields(ctx)
-}
-
-// NewContext return a new logger context
+// NewContext return a new logger context.
 func NewContext(ctx context.Context, logger Logger) context.Context {
 	if logger == nil {
 		logger = Root()
@@ -88,7 +62,7 @@ func NewContext(ctx context.Context, logger Logger) context.Context {
 	return context.WithValue(ctx, loggerKey, logger)
 }
 
-// FromContext get logger form context
+// FromContext get logger form context.
 func FromContext(ctx context.Context) Logger {
 	if ctx == nil {
 		return Root()
@@ -99,62 +73,14 @@ func FromContext(ctx context.Context) Logger {
 	return Root()
 }
 
-// Infof print info with format.
-func Infof(format string, v ...interface{}) {
-	Root().Infof(format, v...)
-}
-
-// Debugf print debug with format.
-func Debugf(format string, v ...interface{}) {
-	Root().Debugf(format, v...)
-}
-
-// Warnf print warning with format.
-func Warnf(format string, v ...interface{}) {
-	Root().Warnf(format, v...)
-}
-
-// Errorf print error with format.
-func Errorf(format string, v ...interface{}) {
-	Root().Errorf(format, v...)
-}
-
-// Panicf panic with format.
-func Panicf(format string, v ...interface{}) {
-	Root().Panicf(format, v...)
-}
-
-// Info print info.
-func Info(v ...interface{}) {
-	Root().Info(v...)
-}
-
-// Debug print debug.
-func Debug(v ...interface{}) {
-	Root().Debug(v...)
-}
-
-// Warn print warning.
-func Warn(v ...interface{}) {
-	Root().Warn(v...)
-}
-
-// Error print error.
-func Error(v ...interface{}) {
-	Root().Error(v...)
-}
-
-// Panic panic.
-func Panic(v ...interface{}) {
-	Root().Panic(v...)
-}
-
-// WithFields return a new logger entry with fields
-func WithFields(fields Fields) Logger {
-	return Root().WithFields(fields)
-}
-
-// WithContext return a logger from the given context
-func WithContext(ctx context.Context) Logger {
-	return FromContext(ctx)
+func fields(kv ...interface{}) map[string]interface{} {
+	fields := make(map[string]interface{})
+	ood := len(kv) % 2
+	for i := 0; i < len(kv)-ood; i += 2 {
+		fields[fmt.Sprintf("%v", kv[i])] = kv[i+1]
+	}
+	if ood == 1 {
+		fields["msg.1"] = fmt.Sprintf("%v", kv[len(kv)-1])
+	}
+	return fields
 }

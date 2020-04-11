@@ -42,6 +42,7 @@ func JWTAuth(secret string) Option {
 // Logger is an option allow add a custom logger into the server.
 func Logger(logger log.Logger) Option {
 	return func(opts *Server) {
+		opts.log = logger
 		opts.streamInterceptors = append(opts.streamInterceptors, log.StreamInterceptor(logger))
 		opts.unaryInterceptors = append(opts.unaryInterceptors, log.UnaryInterceptor(logger))
 	}
@@ -94,8 +95,8 @@ func ServeMuxOptions(muxOpts ...runtime.ServeMuxOption) Option {
 	}
 }
 
-// ServerOptions is an option allow add addtional grpc.ServerOption.
-func ServerOptions(serverOpts ...grpc.ServerOption) Option {
+// Options is an option allow add addtional grpc.ServerOption.
+func Options(serverOpts ...grpc.ServerOption) Option {
 	return func(opts *Server) {
 		opts.serverOptions = append(opts.serverOptions, serverOpts...)
 	}

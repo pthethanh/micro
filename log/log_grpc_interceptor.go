@@ -17,9 +17,7 @@ import (
 func StreamInterceptor(l Logger) grpc.StreamServerInterceptor {
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 		requestID := requestIDFromGRPCContext(ss.Context())
-		logger := l.WithFields(Fields{
-			"request_id": requestID,
-		})
+		logger := l.Fields("request_id", requestID)
 		newCtx := NewContext(ss.Context(), logger)
 		wrapped := grpc_middleware.WrapServerStream(ss)
 		wrapped.WrappedContext = newCtx
@@ -34,9 +32,7 @@ func StreamInterceptor(l Logger) grpc.StreamServerInterceptor {
 func UnaryInterceptor(l Logger) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 		requestID := requestIDFromGRPCContext(ctx)
-		logger := l.WithFields(Fields{
-			"request_id": requestID,
-		})
+		logger := l.Fields("request_id", requestID)
 		newCtx := NewContext(ctx, logger)
 		return handler(newCtx, req)
 	}

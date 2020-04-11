@@ -19,12 +19,11 @@ func NewHTTPContextHandler(l Logger) func(http.Handler) http.Handler {
 			if requestID == "" {
 				requestID = uuid.New().String()
 			}
-			logger := l.WithFields(Fields{
-				"request_id":  requestID,
-				"path":        r.URL.Path,
-				"remote_addr": r.RemoteAddr,
-				"method":      r.Method,
-			})
+			logger := l.Fields(
+				"request_id", requestID,
+				"path", r.URL.Path,
+				"remote_addr", r.RemoteAddr,
+				"method", r.Method)
 			r = r.WithContext(NewContext(ctx, logger))
 			inner.ServeHTTP(w, r)
 		})
