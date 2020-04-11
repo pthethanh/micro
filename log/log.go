@@ -5,6 +5,7 @@ import (
 )
 
 type (
+	// Logger defines standard operations of a logger.
 	Logger interface {
 		// Infof print info with format.
 		Infof(format string, v ...interface{})
