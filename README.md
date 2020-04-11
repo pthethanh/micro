@@ -1,5 +1,9 @@
 # micro
 
+[![GoDoc](https://godoc.org/github.com/pthethanh/micro?status.svg)](https://pkg.go.dev/mod/github.com/pthethanh/micro)
+[![GoReportCard](https://goreportcard.com/badge/github.com/pthethanh/micro)](https://goreportcard.com/report/github.com/pthethanh/micro)
+
+
 Just a simple tool kit for building microservices.
 
 **Note**: Please notice that this is just in experiment stage right now and API can be changed without notification, hence please don't use this for production.

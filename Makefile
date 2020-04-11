@@ -5,7 +5,7 @@ GO_FILES=$(shell go list ./... | grep -v /vendor/)
 
 .SILENT:
 
-all: mod_tidy fmt vet test 
+all: mod_tidy fmt vet build test
 
 vet:
 	$(GO_BUILD_ENV) go vet $(GO_FILES)
@@ -18,3 +18,6 @@ test:
 
 mod_tidy:
 	$(GO_BUILD_ENV) go mod tidy
+
+build:
+	$(GO_BUILD_ENV) go build -v  $(GO_FILES)
