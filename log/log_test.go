@@ -2,8 +2,11 @@ package log_test
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/pthethanh/micro/log"
 )
@@ -31,4 +34,60 @@ func TestLog(t *testing.T) {
 	log.Fields("field1", 1).Fields("field2", 2).Context(ctx).Debug()
 	log.Fields("field1", 1).Context(ctx).Fields("field2", 2).Debug()
 	log.Context(ctx).Fields("field1", 1).Fields("field2", 2).Debug()
+}
+
+func TestLogInit(t *testing.T) {
+	errInitFailed := errors.New("err init failed")
+	cases := []struct {
+		give func() error
+		want error
+	}{
+		{
+			give: func() error {
+				return log.Init()
+			},
+			want: nil,
+		},
+		{
+			give: func() error {
+				return log.Init(log.FromEnv())
+			},
+			want: nil,
+		},
+		{
+			give: func() error {
+				return log.Init(log.WithFields("name", "my service"))
+			},
+			want: nil,
+		},
+		{
+			give: func() error {
+				return log.Init(log.WithFields())
+			},
+			want: nil,
+		},
+		{
+			give: func() error {
+				return log.Init(log.WithFormat(log.FormatJSON), log.WithLevel(log.LevelInfo), log.WithTimeFormat(time.RFC1123))
+			},
+			want: nil,
+		},
+		{
+			give: func() error {
+				if err := log.Init(log.WithLevel(log.Level(-1))); err != nil {
+					return errInitFailed
+				}
+				return nil
+			},
+			want: errInitFailed,
+		},
+	}
+	for i, c := range cases {
+		t.Run(fmt.Sprintf("case %d", i), func(t *testing.T) {
+			if err := c.give(); err != c.want {
+				t.Errorf("got err=%v, want err=%v", err, c.want)
+			}
+		})
+	}
+
 }

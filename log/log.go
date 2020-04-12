@@ -155,6 +155,9 @@ func (opts Options) GetFormat() (Format, error) {
 	if opts.Format != FormatText && opts.Format != FormatJSON && opts.Format != "" {
 		return "", fmt.Errorf("log: format not supported: %s", opts.Format)
 	}
+	if opts.Format == "" {
+		return FormatJSON, nil
+	}
 	return opts.Format, nil
 }
 

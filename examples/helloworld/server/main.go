@@ -19,6 +19,7 @@ type (
 
 // SayHello implements pb.GreeterServer interface.
 func (s *service) SayHello(ctx context.Context, req *pb.HelloRequest) (*pb.HelloReply, error) {
+	log.Context(ctx).Info("name", req.Name)
 	if req.Name == "" {
 		return nil, status.Error(codes.InvalidArgument, "name must not be empty")
 	}

@@ -15,11 +15,15 @@ import (
 )
 
 func main() {
-	// GRPC
-	addr := os.Getenv("ADDRESS")
+	addr := ":" + os.Getenv("PORT")
+	if addr == ":" {
+		addr = os.Getenv("ADDRESS")
+	}
 	if addr == "" {
 		addr = ":8000"
 	}
+	fmt.Println(addr)
+	// GRPC
 	conn, err := grpc.Dial(addr, grpc.WithInsecure())
 	if err != nil {
 		log.Fatal(err)

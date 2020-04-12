@@ -45,12 +45,14 @@ func newFromConfig(conf Config) *Server {
 		TLS(conf.TLSKeyFile, conf.TLSCertFile),
 		Timeout(conf.ReadTimeout, conf.WriteTimeout),
 		JWTAuth(conf.JWTSecret),
+		AddressFromEnv(),
 	}
 	server := New(conf.Address, opts...)
 	if conf.ContextLogger {
-		// allow request-id to be passed.
-		opts = append(opts, ServeMuxOptions(DefaultHeaderMatcher()))
-		opts = append(opts, Logger(server.log.Fields("service", conf.Name)))
+		if conf.Name != "" {
+			server.log = server.log.Fields("name", conf.Name)
+		}
+		server.WithOptions(Logger(server.log))
 	}
 	return server
 }

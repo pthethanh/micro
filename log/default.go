@@ -93,5 +93,5 @@ func Fields(kv ...interface{}) Logger {
 
 // Context return a logger from the given context.
 func Context(ctx context.Context) Logger {
-	return FromContext(ctx)
+	return Root().Context(ctx)
 }

@@ -1,7 +1,9 @@
 package server
 
 import (
+	"fmt"
 	"net/textproto"
+	"os"
 	"time"
 
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
@@ -43,6 +45,7 @@ func JWTAuth(secret string) Option {
 func Logger(logger log.Logger) Option {
 	return func(opts *Server) {
 		opts.log = logger
+		opts.serveMuxOptions = append(opts.serveMuxOptions, DefaultHeaderMatcher())
 		opts.streamInterceptors = append(opts.streamInterceptors, log.StreamInterceptor(logger))
 		opts.unaryInterceptors = append(opts.unaryInterceptors, log.UnaryInterceptor(logger))
 	}
@@ -88,14 +91,14 @@ func Timeout(read, write time.Duration) Option {
 	}
 }
 
-// ServeMuxOptions is an option allow add additinal ServeMuxOption.
+// ServeMuxOptions is an option allow add additional ServeMuxOption.
 func ServeMuxOptions(muxOpts ...runtime.ServeMuxOption) Option {
 	return func(opts *Server) {
 		opts.serveMuxOptions = append(opts.serveMuxOptions, muxOpts...)
 	}
 }
 
-// Options is an option allow add addtional grpc.ServerOption.
+// Options is an option allow add additional grpc.ServerOption.
 func Options(serverOpts ...grpc.ServerOption) Option {
 	return func(opts *Server) {
 		opts.serverOptions = append(opts.serverOptions, serverOpts...)
@@ -106,6 +109,22 @@ func Options(serverOpts ...grpc.ServerOption) Option {
 func HealthChecks(checks ...health.CheckFunc) Option {
 	return func(opts *Server) {
 		opts.healthChecks = checks
+	}
+}
+
+// AddressFromEnv is an option to get address from environment configuration.
+// It looks for PORT and then ADDRESS variables.
+// This option is mostly used for cloud environment like Heroku where the port
+// is randomly set.
+func AddressFromEnv() Option {
+	return func(opts *Server) {
+		if p := os.Getenv("PORT"); p != "" {
+			opts.address = fmt.Sprintf(":%s", p)
+			return
+		}
+		if addr := os.Getenv("ADDRESS"); addr != "" {
+			opts.address = addr
+		}
 	}
 }
 

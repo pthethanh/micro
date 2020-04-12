@@ -179,7 +179,7 @@ func (server *Server) ListenAndServeContext(ctx context.Context, services ...Ser
 
 	// tell everyone we're ready
 	health.Ready()
-
+	server.log.Infof("listening at: %s", server.address)
 	select {
 	case <-ctx.Done():
 		grpcServer.GracefulStop()

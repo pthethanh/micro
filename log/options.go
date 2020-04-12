@@ -57,7 +57,10 @@ func WithTimeFormat(f string) Option {
 // WithFields provides an option to set logger fields.
 func WithFields(kv ...interface{}) Option {
 	return func(opts *Options) {
-		for k, v := range kv {
+		if opts.Fields == nil {
+			opts.Fields = make(map[string]string)
+		}
+		for k, v := range fields(kv...) {
 			opts.Fields[fmt.Sprintf("%v", k)] = fmt.Sprintf("%v", v)
 		}
 	}
