@@ -11,7 +11,7 @@ type (
 	// Config is a common configuration of a default server.
 	// Mostly used by lazy guys via NewFromEnv().
 	Config struct {
-		Name        string `envconfig:"NAME"`
+		Name        string `envconfig:"NAME" default:"micro"`
 		Address     string `envconfig:"ADDRESS" default:":8000"`
 		TLSCertFile string `envconfig:"TLS_CERT_FILE"`
 		TLSKeyFile  string `envconfig:"TLS_KEY_FILE"`

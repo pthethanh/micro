@@ -15,7 +15,7 @@ func init() {
 }
 
 // Root return default logger instance.
-// Root will try to init a root logger base on environemnt configuration.
+// Root will try to init a root logger base on environment configuration.
 // It will panic if failed to init.
 func Root() Logger {
 	if root == nil {
@@ -28,7 +28,7 @@ func Root() Logger {
 
 // Init init the root logger with fields.
 func Init(opts ...Option) error {
-	l := &microLogger{}
+	l := &Logrus{}
 	if err := l.Init(opts...); err != nil {
 		return err
 	}

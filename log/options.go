@@ -2,6 +2,7 @@ package log
 
 import (
 	"fmt"
+	"io"
 	"log"
 
 	"github.com/pthethanh/micro/config/envconfig"
@@ -40,13 +41,6 @@ func WithFormat(f Format) Option {
 	}
 }
 
-// WithFile provides an option to set output to a file.
-func WithFile(f string) Option {
-	return func(opts *Options) {
-		opts.Output = filePrefix + f
-	}
-}
-
 // WithTimeFormat provides an option to set time format for logger.
 func WithTimeFormat(f string) Option {
 	return func(opts *Options) {
@@ -63,5 +57,12 @@ func WithFields(kv ...interface{}) Option {
 		for k, v := range fields(kv...) {
 			opts.Fields[fmt.Sprintf("%v", k)] = fmt.Sprintf("%v", v)
 		}
+	}
+}
+
+// WithWriter provides an option to set a output writer.
+func WithWriter(w io.Writer) Option {
+	return func(opts *Options) {
+		opts.writer = w
 	}
 }

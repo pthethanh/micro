@@ -15,6 +15,10 @@ import (
 	"google.golang.org/grpc/credentials"
 )
 
+const (
+	defaultAddr = ":8000"
+)
+
 // StreamInterceptors is an option allows add additional stream interceptors to the server.
 func StreamInterceptors(interceptors ...grpc.StreamServerInterceptor) Option {
 	return func(opts *Server) {
@@ -124,6 +128,10 @@ func AddressFromEnv() Option {
 		}
 		if addr := os.Getenv("ADDRESS"); addr != "" {
 			opts.address = addr
+			return
+		}
+		if opts.address == "" {
+			opts.address = defaultAddr
 		}
 	}
 }

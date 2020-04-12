@@ -1,10 +1,14 @@
 package log_test
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -90,4 +94,22 @@ func TestLogInit(t *testing.T) {
 		})
 	}
 
+}
+
+func TestLogWriter(t *testing.T) {
+	test := func(w io.ReadWriter) {
+		if err := log.Init(log.WithWriter(w), log.WithLevel(log.LevelDebug), log.WithFormat(log.FormatJSON)); err != nil {
+			t.Errorf("init failed: %v\n", err)
+		}
+		msg := "something"
+		log.Debug(msg)
+		b, err := ioutil.ReadAll(w)
+		if err != nil {
+			t.Error(err)
+		}
+		if !strings.Contains(string(b), msg) {
+			t.Errorf("got msg=%s, want msg constains %q", string(b), msg)
+		}
+	}
+	test(&bytes.Buffer{})
 }

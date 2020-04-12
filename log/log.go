@@ -62,6 +62,7 @@ type (
 		TimeFormat string            `envconfig:"LOG_TIME_FORMAT" default:"Mon, 02 Jan 2006 15:04:05 -0700"`
 		Output     string            `envconfig:"LOG_OUTPUT"`
 		Fields     map[string]string `envconfig:"LOG_FIELDS"`
+		writer     io.Writer
 	}
 	// Option is an option for configure logger.
 	Option = func(*Options)
@@ -125,9 +126,11 @@ func FromContext(ctx context.Context) Logger {
 	return Root()
 }
 
-// GetOutput return writer output. If the given output is not valid, os.Stdout is returned.
-func (opts Options) GetOutput() (io.WriteCloser, error) {
+// GetWriter return writer output. If the given output is not valid, os.Stdout is returned.
+func (opts Options) GetWriter() (io.Writer, error) {
 	switch {
+	case opts.writer != nil:
+		return opts.writer, nil
 	case strings.HasPrefix(opts.Output, filePrefix):
 		name := opts.Output[len(filePrefix):]
 		f, err := os.Create(name)
