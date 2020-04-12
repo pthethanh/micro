@@ -6,22 +6,34 @@ var (
 	root Logger
 )
 
+func init() {
+	if root == nil {
+		if err := Init(FromEnv()); err != nil {
+			panic(err)
+		}
+	}
+}
+
 // Root return default logger instance.
+// Root will try to init a root logger base on environemnt configuration.
+// It will panic if failed to init.
 func Root() Logger {
 	if root == nil {
-		root = newGlog()
+		if err := Init(FromEnv()); err != nil {
+			panic(err)
+		}
 	}
 	return root
 }
 
 // Init init the root logger with fields.
-func Init(kv ...interface{}) {
-	root = newGlogWithFields(fields(kv...))
-}
-
-// New return new logger with context.
-func New(kv ...interface{}) Logger {
-	return newGlogWithFields(fields(kv...))
+func Init(opts ...Option) error {
+	l := &microLogger{}
+	if err := l.Init(opts...); err != nil {
+		return err
+	}
+	root = l
+	return nil
 }
 
 // Infof print info with format.

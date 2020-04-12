@@ -10,7 +10,10 @@ import (
 
 func TestLog(t *testing.T) {
 	os.Setenv("LOG_FORMAT", "json")
-	log.Init("service", "micro")
+	os.Setenv("LOG_FIELDS", "service:micro,site:vn")
+
+	log.Init(log.FromEnv())
+
 	log.Debug("debug", 1)
 	log.Debugf("debug %d", 2)
 	log.Info("info", 1)

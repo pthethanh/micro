@@ -3,11 +3,17 @@ package log
 import (
 	"context"
 	"fmt"
+	"io"
+	"os"
+	"strings"
 )
 
 type (
 	// Logger defines standard operations of a logger.
 	Logger interface {
+		// Init init the logger.
+		Init(...Option) error
+
 		// Infof print info with format.
 		Infof(format string, v ...interface{})
 
@@ -48,10 +54,56 @@ type (
 
 	// context key
 	contextKey string
+
+	// Options hold logger options
+	Options struct {
+		Level      Level             `envconfig:"LOG_LEVEL" default:"5"`
+		Format     Format            `envconfig:"LOG_FORMAT" default:"json"`
+		TimeFormat string            `envconfig:"LOG_TIME_FORMAT" default:"Mon, 02 Jan 2006 15:04:05 -0700"`
+		Output     string            `envconfig:"LOG_OUTPUT"`
+		Fields     map[string]string `envconfig:"LOG_FIELDS"`
+	}
+	// Option is an option for configure logger.
+	Option = func(*Options)
+
+	// Level is log level.
+	Level int32
+
+	// Format is log format
+	Format string
 )
 
 const (
-	loggerKey contextKey = contextKey("logger_key")
+	loggerKey  contextKey = contextKey("logger_key")
+	filePrefix            = "file://"
+)
+
+// These are the different logging levels.
+const (
+	// LevelPanic level, highest level of severity. Logs and then calls panic with the
+	// message passed to Debug, Info, ...
+	LevelPanic Level = iota
+	// LevelFatal level. Logs and then calls os.Exit. It will exit even if the
+	// logging level is set to Panic.
+	LevelFatal
+	// LevelError level. Logs. Used for errors that should definitely be noted.
+	// Commonly used for hooks to send errors to an error tracking service.
+	LevelError
+	// LevelWarn level. Non-critical entries that deserve eyes.
+	LevelWarn
+	// LevelInfo level. General operational entries about what's going on inside the
+	// application.
+	LevelInfo
+	// LevelDebug level. Usually only enabled when debugging. Very verbose logging.
+	LevelDebug
+	// LevelTrace level. Designates finer-grained informational events than the Debug.
+	LevelTrace
+)
+
+// Formats of log output.
+const (
+	FormatJSON Format = "json"
+	FormatText Format = "text"
 )
 
 // NewContext return a new logger context.
@@ -71,6 +123,39 @@ func FromContext(ctx context.Context) Logger {
 		return logger
 	}
 	return Root()
+}
+
+// GetOutput return writer output. If the given output is not valid, os.Stdout is returned.
+func (opts Options) GetOutput() (io.WriteCloser, error) {
+	switch {
+	case strings.HasPrefix(opts.Output, filePrefix):
+		name := opts.Output[len(filePrefix):]
+		f, err := os.Create(name)
+		if err != nil {
+			return nil, err
+		}
+		return f, nil
+	case opts.Output == "":
+		return os.Stdout, nil
+	default:
+		return nil, fmt.Errorf("log: output not supported: %s", opts.Output)
+	}
+}
+
+// GetLevel return log level. If the given level is not valid, LevelDebug is returned.
+func (opts Options) GetLevel() (Level, error) {
+	if opts.Level < LevelPanic || opts.Level > LevelTrace {
+		return LevelDebug, fmt.Errorf("log: level not supported: %d", opts.Level)
+	}
+	return opts.Level, nil
+}
+
+// GetFormat return format of output log. If given format is not valid, JSON format is returned.
+func (opts Options) GetFormat() (Format, error) {
+	if opts.Format != FormatText && opts.Format != FormatJSON && opts.Format != "" {
+		return "", fmt.Errorf("log: format not supported: %s", opts.Format)
+	}
+	return opts.Format, nil
 }
 
 func fields(kv ...interface{}) map[string]interface{} {
