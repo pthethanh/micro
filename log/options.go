@@ -8,7 +8,7 @@ import (
 	"github.com/pthethanh/micro/config/envconfig"
 )
 
-// FromEnv provides an option to load all options from environemnt.
+// FromEnv provides an option to load all options from environment.
 // LOG_LEVEL default:"5" which is debug level
 // LOG_FORMAT default:"json"
 // LOG_TIME_FORMAT default:"Mon, 02 Jan 2006 15:04:05 -0700"
