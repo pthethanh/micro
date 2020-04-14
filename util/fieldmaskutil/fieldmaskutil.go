@@ -1,4 +1,4 @@
-package field_mask_util
+package fieldmaskutil
 
 import (
 	"fmt"
@@ -28,20 +28,20 @@ func TrimPrefix(paths []string, prefix string) []string {
 	return rs
 }
 
-// GetValidFieldMask return fields match with the value and definition of the given struct.
-func GetValidFieldMask(paths []string, req interface{}) []string {
+// GetValidFields return fields match with the value and definition of the given struct.
+func GetValidFields(paths []string, req interface{}) []string {
 	npaths := make([]string, 0)
 	for _, pth := range paths {
-		if pth, ok := IsValidFieldMask(pth, req); ok {
+		if pth, ok := IsValid(pth, req); ok {
 			npaths = append(npaths, pth)
 		}
 	}
 	return npaths
 }
 
-// IsValidFieldMask check whether the given path matchs with the defined paths
+// IsValid check whether the given path matchs with the defined paths
 // in the given struct. It returns the normalized path follows snake_case format.
-func IsValidFieldMask(path string, req interface{}) (string, bool) {
+func IsValid(path string, req interface{}) (string, bool) {
 	if req == nil {
 		return "", false
 	}
@@ -67,7 +67,7 @@ func IsValidFieldMask(path string, req interface{}) (string, bool) {
 		return "", false
 	}
 	if len(paths) > 1 {
-		nxtPath, ok := IsValidFieldMask(paths[1], v.Field(i).Interface())
+		nxtPath, ok := IsValid(paths[1], v.Field(i).Interface())
 		if !ok {
 			return "", false
 		}

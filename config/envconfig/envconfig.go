@@ -20,8 +20,8 @@ type (
 func (env *Config) Read(ptr interface{}, opts ...config.ReadOption) error {
 	ops := &config.ReadOptions{}
 	ops.Apply(opts...)
-	if ops.Preload != nil {
-		if err := ops.Preload(); err != nil {
+	if ops.File != "" {
+		if err := loadEnvFromFile(ops.File); err != nil {
 			return err
 		}
 	}
@@ -31,13 +31,6 @@ func (env *Config) Read(ptr interface{}, opts ...config.ReadOption) error {
 // Close implements config.Reader interface.
 func (env *Config) Close() error {
 	return nil
-}
-
-// FromFile is an option for loading environment variable from a file.
-func FromFile(f string) config.ReadOption {
-	return config.WithPreload(func() error {
-		return loadEnvFromFile(f)
-	})
 }
 
 // loadEnvFromFile load environments from file

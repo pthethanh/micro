@@ -1,9 +1,9 @@
-package field_mask_util_test
+package fieldmaskutil_test
 
 import (
 	"testing"
 
-	"github.com/pthethanh/micro/util/field_mask_util"
+	"github.com/pthethanh/micro/util/fieldmaskutil"
 )
 
 type (
@@ -84,7 +84,7 @@ func TestValidateFieldMask(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			if npath, valid := field_mask_util.IsValidFieldMask(c.path, v); valid != c.valid && npath != c.npath {
+			if npath, valid := fieldmaskutil.IsValid(c.path, v); valid != c.valid && npath != c.npath {
 				t.Errorf("got valid=%t, path=%s, want valid=%t, path=%s", valid, npath, c.valid, c.path)
 			}
 		})
@@ -95,7 +95,7 @@ func TestGetValidFieldMask(t *testing.T) {
 	v := MyStruct{
 		NextMeta: &Meta{},
 	}
-	paths := field_mask_util.GetValidFieldMask([]string{
+	paths := fieldmaskutil.GetValidFields([]string{
 		"name",
 		"NextMeta.values",
 		"meta.values",
@@ -108,7 +108,7 @@ func TestGetValidFieldMask(t *testing.T) {
 }
 
 func TestTrimPrefix(t *testing.T) {
-	rs := field_mask_util.TrimPrefix([]string{"comment.status", "comment.content"}, "comment.")
+	rs := fieldmaskutil.TrimPrefix([]string{"comment.status", "comment.content"}, "comment.")
 	if rs[0] != "status" || rs[1] != "content" {
 		t.Fatalf("got rs=%v, want rs=%v", rs, []string{"status", "content"})
 	}

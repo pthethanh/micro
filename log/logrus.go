@@ -70,7 +70,7 @@ func (l *Logrus) Info(args ...interface{}) {
 	l.logger.Infoln(args...)
 }
 
-// Debugf print debug
+// Debug print debug
 func (l *Logrus) Debug(v ...interface{}) {
 	l.logger.Debugln(v...)
 }
@@ -80,7 +80,7 @@ func (l *Logrus) Warn(v ...interface{}) {
 	l.logger.Warnln(v...)
 }
 
-// Errorf print error
+// Error print error
 func (l *Logrus) Error(v ...interface{}) {
 	l.logger.Errorln(v...)
 }
@@ -115,7 +115,7 @@ func (l *Logrus) Panicf(format string, v ...interface{}) {
 	l.logger.Panicf(format, v...)
 }
 
-// WithFields return a new logger with fields.
+// Fields return a new logger with fields.
 func (l *Logrus) Fields(kv ...interface{}) Logger {
 	return &Logrus{
 		logger: l.logger.WithFields(logrus.Fields(fields(kv...))),

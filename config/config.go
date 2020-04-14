@@ -3,8 +3,8 @@ package config
 type (
 	// ReadOptions contains available options of Reader interface.
 	ReadOptions struct {
-		Prefix  string
-		Preload func() error
+		Prefix string
+		File   string
 	}
 
 	// ReadOption is a helper setting ReadOptions.
@@ -28,10 +28,10 @@ func WithPrefix(prefix string) ReadOption {
 	}
 }
 
-// WithPreload is an option allow caller to do something before reading the config.
-func WithPreload(f func() error) ReadOption {
+// WithFile is an option allow the reader read configuration from a file.
+func WithFile(f string) ReadOption {
 	return func(o *ReadOptions) {
-		o.Preload = f
+		o.File = f
 	}
 }
 
