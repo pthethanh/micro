@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"net/http"
 	"net/textproto"
 	"os"
 	"time"
@@ -22,14 +23,14 @@ const (
 // StreamInterceptors is an option allows add additional stream interceptors to the server.
 func StreamInterceptors(interceptors ...grpc.StreamServerInterceptor) Option {
 	return func(opts *Server) {
-		opts.streamInterceptors = interceptors
+		opts.streamInterceptors = append(opts.streamInterceptors, interceptors...)
 	}
 }
 
 // UnaryInterceptors is an option allows add additional unary interceptors to the server.
 func UnaryInterceptors(interceptors ...grpc.UnaryServerInterceptor) Option {
 	return func(opts *Server) {
-		opts.unaryInterceptors = interceptors
+		opts.unaryInterceptors = append(opts.unaryInterceptors, interceptors...)
 	}
 }
 
@@ -40,6 +41,14 @@ func JWTAuth(secret string) Option {
 			return
 		}
 		f := jwt.Authenticator([]byte(secret))
+		opts.streamInterceptors = append(opts.streamInterceptors, auth.StreamInterceptor(f))
+		opts.unaryInterceptors = append(opts.unaryInterceptors, auth.UnaryInterceptor(f))
+	}
+}
+
+// WithAuth is an option allow to add an authenticator to the server.
+func WithAuth(f auth.AuthenticatorFunc) Option {
+	return func(opts *Server) {
 		opts.streamInterceptors = append(opts.streamInterceptors, auth.StreamInterceptor(f))
 		opts.unaryInterceptors = append(opts.unaryInterceptors, auth.UnaryInterceptor(f))
 	}
@@ -112,7 +121,7 @@ func Options(serverOpts ...grpc.ServerOption) Option {
 // HealthChecks is an option allow set health check function.
 func HealthChecks(checks ...health.CheckFunc) Option {
 	return func(opts *Server) {
-		opts.healthChecks = checks
+		opts.healthChecks = append(opts.healthChecks, checks...)
 	}
 }
 
@@ -133,6 +142,18 @@ func AddressFromEnv() Option {
 		if opts.address == "" {
 			opts.address = defaultAddr
 		}
+	}
+}
+
+// WithHTTPHandler is an option to set additional HTTP only handler.
+// This is mostly used for adding additional internal API or serve static files.
+// *NOTE: This method will panic if path / is provided.
+func WithHTTPHandler(path string, method string, h http.Handler, queries ...string) Option {
+	return func(opts *Server) {
+		if path == "/" {
+			log.Panic("Using path / will cause issue with gRPC routing and hence is not allowed.")
+		}
+		opts.getOrCreateRouter().Path(path).Methods(method).Queries(queries...).Handler(h)
 	}
 }
 

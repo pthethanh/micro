@@ -4,6 +4,7 @@ import (
 	"context"
 	"net"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -12,16 +13,20 @@ import (
 	"google.golang.org/grpc"
 )
 
+var (
+	addrs = map[string]bool{":8000": false, ":8001": false, ":8002": false, ":8003": false, ":8004": false, ":8080": false}
+	mu    = &sync.Mutex{}
+)
+
 func TestInitServerDefault(t *testing.T) {
-	addr := ":8000"
-	os.Setenv("ADDRESS", addr)
-	l, err := net.Listen("tcp", addr)
-	if err != nil {
+	t.Parallel()
+	addr := availableAddress()
+	if addr == "" {
 		log.Warn("address is already in use, ignore unit test")
 		t.SkipNow()
 		return
 	}
-	l.Close() // close to start the test
+	os.Setenv("ADDRESS", addr)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
@@ -33,20 +38,17 @@ func TestInitServerDefault(t *testing.T) {
 }
 
 func TestInitServerWithOptions(t *testing.T) {
-	addr := ":8001"
-	os.Setenv("ADDRESS", addr)
-	l, err := net.Listen("tcp", addr)
-	if err != nil {
+	t.Parallel()
+	addr := availableAddress()
+	if addr == "" {
 		log.Warn("address is already in use, ignore unit test")
 		t.SkipNow()
 		return
 	}
-	l.Close() // close to start the test
 
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
-	srv := server.New("",
-		server.AddressFromEnv(),
+	srv := server.New(addr,
 		server.JWTAuth("secret"),
 		server.Logger(log.Root()),
 		server.MetricsPaths("ready", "live", "metrics"),
@@ -62,4 +64,22 @@ func TestInitServerWithOptions(t *testing.T) {
 			t.Error(err)
 		}
 	}
+}
+
+func availableAddress() string {
+	mu.Lock()
+	defer mu.Unlock()
+	for addr, used := range addrs {
+		if used {
+			continue
+		}
+		addrs[addr] = true
+		l, err := net.Listen("tcp", addr)
+		if err != nil {
+			continue
+		}
+		l.Close()
+		return addr
+	}
+	return ""
 }

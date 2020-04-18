@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/gorilla/mux"
 	"github.com/pthethanh/micro/health"
 	"github.com/pthethanh/micro/log"
 	"golang.org/x/net/http2"
@@ -38,6 +39,7 @@ type (
 		// HTTP
 		readTimeout  time.Duration
 		writeTimeout time.Duration
+		router       *mux.Router
 
 		// Needs to be set manually
 		healthChecks    []health.CheckFunc
@@ -128,8 +130,8 @@ func (server *Server) ListenAndServeContext(ctx context.Context, services ...Ser
 	if len(muxOpts) == 0 {
 		muxOpts = []runtime.ServeMuxOption{DefaultHeaderMatcher()}
 	}
-	gwMux := runtime.NewServeMux(muxOpts...)
-	mux := http.NewServeMux()
+	gw := runtime.NewServeMux(muxOpts...)
+	router := server.getOrCreateRouter()
 
 	dialOpts := make([]grpc.DialOption, 0)
 	if isSecured {
@@ -146,17 +148,17 @@ func (server *Server) ListenAndServeContext(ctx context.Context, services ...Ser
 	for _, s := range services {
 		s.Register(grpcServer)
 		if epSrv, ok := s.(EndpointService); ok {
-			epSrv.RegisterWithEndpoint(ctx, gwMux, server.address, dialOpts)
+			epSrv.RegisterWithEndpoint(ctx, gw, server.address, dialOpts)
 		}
 	}
 	// Make sure Prometheus metrics are initialized.
 	grpc_prometheus.Register(grpcServer)
 
 	// Attach HTTP handlers
-	mux.Handle("/", gwMux)
-	mux.Handle(server.getReadinessPath(), health.Readiness())
-	mux.Handle(server.getLivenessPath(), health.Liveness(server.healthChecks...))
-	mux.Handle(server.getMetricsPath(), promhttp.Handler())
+	router.Path(server.getReadinessPath()).Methods(http.MethodGet).Handler(health.Readiness())
+	router.Path(server.getLivenessPath()).Methods(http.MethodGet).Handler(health.Liveness(server.healthChecks...))
+	router.Path(server.getMetricsPath()).Methods(http.MethodGet).Handler(promhttp.Handler())
+	router.PathPrefix("/").Handler(gw)
 
 	errChan := make(chan error, 1)
 	sigChan := make(chan os.Signal, 1)
@@ -164,7 +166,7 @@ func (server *Server) ListenAndServeContext(ctx context.Context, services ...Ser
 
 	httpServer := &http.Server{
 		Addr:         server.address,
-		Handler:      grpcHandlerFunc(isSecured, grpcServer, mux),
+		Handler:      grpcHandlerFunc(isSecured, grpcServer, router),
 		ReadTimeout:  server.readTimeout,
 		WriteTimeout: server.writeTimeout,
 	}
@@ -244,8 +246,16 @@ func (server Server) getMetricsPath() string {
 }
 
 // WithOptions allows add more options to the server after created.
-func (server *Server) WithOptions(opts ...Option) {
+func (server *Server) WithOptions(opts ...Option) *Server {
 	for _, op := range opts {
 		op(server)
 	}
+	return server
+}
+
+func (server *Server) getOrCreateRouter() *mux.Router {
+	if server.router == nil {
+		server.router = mux.NewRouter()
+	}
+	return server.router
 }
