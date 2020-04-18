@@ -145,10 +145,10 @@ func AddressFromEnv() Option {
 	}
 }
 
-// WithHTTPHandler is an option to set additional HTTP only handler.
+// HTTPOnly is an option to set additional HTTP only handler.
 // This is mostly used for adding additional internal API or serve static files.
 // *NOTE: This method will panic if path / is provided.
-func WithHTTPHandler(path string, method string, h http.Handler, queries ...string) Option {
+func HTTPOnly(path string, method string, h http.Handler, queries ...string) Option {
 	return func(opts *Server) {
 		if path == "/" {
 			log.Panic("Using path / will cause issue with gRPC routing and hence is not allowed.")
