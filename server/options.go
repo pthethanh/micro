@@ -46,8 +46,8 @@ func JWTAuth(secret string) Option {
 	}
 }
 
-// WithAuth is an option allow to add an authenticator to the server.
-func WithAuth(f auth.AuthenticatorFunc) Option {
+// Auth is an option allow to add an authenticator to the server.
+func Auth(f auth.AuthenticatorFunc) Option {
 	return func(opts *Server) {
 		opts.streamInterceptors = append(opts.streamInterceptors, auth.StreamInterceptor(f))
 		opts.unaryInterceptors = append(opts.unaryInterceptors, auth.UnaryInterceptor(f))
