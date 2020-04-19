@@ -145,23 +145,43 @@ func AddressFromEnv() Option {
 	}
 }
 
-// HTTPHandler is an option to add additional HTTP handler.
-// This should used for internal API only.
+// HTTPHandler is an option to add additional HTTP handlers.
 // If you want to apply middlewares on the HTTP handlers, do it yourselves.
-func HTTPHandler(path string, method string, h http.Handler, queries ...string) Option {
+func HTTPHandler(path string, h http.Handler) Option {
 	return func(opts *Server) {
-		opts.getOrCreateRouter().Path(path).Methods(method).Queries(queries...).Handler(h)
+		opts.routes = append(opts.routes, route{p: path, h: h})
+	}
+}
+
+// APIPrefix is an option to route only the specified path prefix to gRPC Gateway.
+// This option is used mostly when you serve both gRPC APIs along with other internal HTTP APIs.
+// The default prefix is /, which will route all paths to gRPC Gateway.
+func APIPrefix(prefix string) Option {
+	return func(opts *Server) {
+		opts.apiPrefix = prefix
+	}
+}
+
+// Web is an option to allow serving Web/Single Page Application along with API Gateway and gRPC.
+// API Gateway must be served in a different path prefix different from root path /
+// by using server.APIPrefix(prefix), otherwise a panic will be thrown.
+func Web(dir string, index string) Option {
+	return func(opts *Server) {
+		HTTPHandler("/", spaHandler{
+			index: index,
+			dir:   dir,
+		})(opts)
 	}
 }
 
 // DefaultHeaderMatcher return a ServerMuxOption that forward
-// header keys request-id, api-key to GRPC Context.
+// header keys request-id, api-key to gRPC Context.
 func DefaultHeaderMatcher() runtime.ServeMuxOption {
 	return HeaderMatcher([]string{"Request-Id", "Api-Key"})
 }
 
 // HeaderMatcher return a serveMuxOption for matcher header
-// for passing a set of non IANA headers to GRPC context
+// for passing a set of non IANA headers to gRPC context
 // without a need to prefix them with Grpc-Metadata.
 func HeaderMatcher(keys []string) runtime.ServeMuxOption {
 	return runtime.WithIncomingHeaderMatcher(func(key string) (string, bool) {

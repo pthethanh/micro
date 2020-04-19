@@ -10,7 +10,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/gorilla/mux"
 	"github.com/pthethanh/micro/health"
 	"github.com/pthethanh/micro/log"
 	"golang.org/x/net/http2"
@@ -39,7 +38,8 @@ type (
 		// HTTP
 		readTimeout  time.Duration
 		writeTimeout time.Duration
-		router       *mux.Router
+		routes       []route
+		apiPrefix    string
 
 		// Needs to be set manually
 		healthChecks    []health.CheckFunc
@@ -76,6 +76,11 @@ type (
 	// `codes.PermissionDenied` when lacking permissions.
 	Authenticator interface {
 		Authenticate(ctx context.Context) (context.Context, error)
+	}
+
+	route struct {
+		p string
+		h http.Handler
 	}
 )
 
@@ -131,7 +136,7 @@ func (server *Server) ListenAndServeContext(ctx context.Context, services ...Ser
 		muxOpts = []runtime.ServeMuxOption{DefaultHeaderMatcher()}
 	}
 	gw := runtime.NewServeMux(muxOpts...)
-	router := server.getOrCreateRouter()
+	mux := http.NewServeMux()
 
 	dialOpts := make([]grpc.DialOption, 0)
 	if isSecured {
@@ -155,10 +160,13 @@ func (server *Server) ListenAndServeContext(ctx context.Context, services ...Ser
 	grpc_prometheus.Register(grpcServer)
 
 	// Attach HTTP handlers
-	router.Path(server.getReadinessPath()).Methods(http.MethodGet).Handler(health.Readiness())
-	router.Path(server.getLivenessPath()).Methods(http.MethodGet).Handler(health.Liveness(server.healthChecks...))
-	router.Path(server.getMetricsPath()).Methods(http.MethodGet).Handler(promhttp.Handler())
-	router.PathPrefix("/").Handler(gw)
+	mux.Handle(server.getReadinessPath(), health.Readiness())
+	mux.Handle(server.getLivenessPath(), health.Liveness(server.healthChecks...))
+	mux.Handle(server.getMetricsPath(), promhttp.Handler())
+	mux.Handle(server.getAPIPrefix(), gw)
+	for _, r := range server.routes {
+		mux.Handle(r.p, r.h)
+	}
 
 	errChan := make(chan error, 1)
 	sigChan := make(chan os.Signal, 1)
@@ -166,7 +174,7 @@ func (server *Server) ListenAndServeContext(ctx context.Context, services ...Ser
 
 	httpServer := &http.Server{
 		Addr:         server.address,
-		Handler:      grpcHandlerFunc(isSecured, grpcServer, router),
+		Handler:      grpcHandlerFunc(isSecured, grpcServer, mux),
 		ReadTimeout:  server.readTimeout,
 		WriteTimeout: server.writeTimeout,
 	}
@@ -253,9 +261,9 @@ func (server *Server) WithOptions(opts ...Option) *Server {
 	return server
 }
 
-func (server *Server) getOrCreateRouter() *mux.Router {
-	if server.router == nil {
-		server.router = mux.NewRouter()
+func (server Server) getAPIPrefix() string {
+	if server.apiPrefix == "" {
+		return "/"
 	}
-	return server.router
+	return server.apiPrefix
 }

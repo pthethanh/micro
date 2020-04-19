@@ -22,8 +22,9 @@ type (
 		MetricsPath   string `envconfig:"METRICS_PATH" default:"/internal/metrics"`
 
 		// HTTP
-		ReadTimeout  time.Duration `envconfig:"READ_TIMEOUT" default:"30s"`
-		WriteTimeout time.Duration `envconfig:"WRITE_TIMEOUT" default:"30s"`
+		ReadTimeout   time.Duration `envconfig:"READ_TIMEOUT" default:"30s"`
+		WriteTimeout  time.Duration `envconfig:"WRITE_TIMEOUT" default:"30s"`
+		APIPathPrefix string        `envconfig:"API_PATH_PREFIX" default:"/"`
 
 		JWTSecret     string `envconfig:"JWT_SECRET"`
 		ContextLogger bool   `envconfig:"CONTEXT_LOGGER" default:"true"`
