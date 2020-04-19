@@ -13,13 +13,15 @@ require (
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 	github.com/grpc-ecosystem/grpc-gateway v1.13.0
 	github.com/kelseyhightower/envconfig v1.4.0
+	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/leodido/go-urn v1.2.0 // indirect
 	github.com/nats-io/nats-server/v2 v2.1.6 // indirect
 	github.com/nats-io/nats.go v1.9.2
 	github.com/prometheus/client_golang v1.5.0
 	github.com/sirupsen/logrus v1.4.2
 	golang.org/x/net v0.0.0-20200301022130-244492dfa37a
-	google.golang.org/genproto v0.0.0-20190927181202-20e1ac93f88c
+	golang.org/x/sys v0.0.0-20200202164722-d101bd2416d5 // indirect
+	google.golang.org/genproto v0.0.0-20191216164720-4f79533eabd1
 	google.golang.org/grpc v1.27.1
 	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
 )

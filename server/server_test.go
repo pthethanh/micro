@@ -49,7 +49,7 @@ func TestInitServerWithOptions(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 	srv := server.New(addr,
-		server.JWTAuth("secret"),
+		server.AuthJWT("secret"),
 		server.Logger(log.Root()),
 		server.MetricsPaths("ready", "live", "metrics"),
 		server.ServeMuxOptions(server.DefaultHeaderMatcher()),
