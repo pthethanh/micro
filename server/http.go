@@ -11,8 +11,8 @@ import (
 // path to the index file within that static directory are used to
 // serve the SPA in the given static directory.
 type spaHandler struct {
-	dir string
-	index  string
+	dir   string
+	index string
 }
 
 // ServeHTTP inspects the URL path to locate a file within the static dir
