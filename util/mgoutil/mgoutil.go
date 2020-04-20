@@ -1,4 +1,4 @@
-package mongodb
+package mgoutil
 
 import (
 	"context"
@@ -19,7 +19,7 @@ type (
 		Password string        `envconfig:"MONGODB_PASSWORD"`
 		Timeout  time.Duration `envconfig:"MONGODB_TIMEOUT" default:"10s"`
 		Mode     mgo.Mode      `envconfig:"MONGODB_MODE" default:"1"`
-		Refesh   bool          `envconfig:"MONGODB_REFRESH" default:"true"`
+		Refresh  bool          `envconfig:"MONGODB_REFRESH" default:"true"`
 	}
 )
 
@@ -44,7 +44,7 @@ func Dial(conf *Config) (*mgo.Session, error) {
 		return nil, err
 	}
 
-	ms.SetMode(conf.Mode, conf.Refesh)
+	ms.SetMode(conf.Mode, conf.Refresh)
 	log.Infof("successfully dialing to MongoDB at %v", conf.Addrs)
 	return ms, nil
 }

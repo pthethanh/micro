@@ -26,7 +26,7 @@ func Root() Logger {
 	return root
 }
 
-// Init init the root logger with fields.
+// Init init the root logger with options.
 func Init(opts ...Option) error {
 	l := &Logrus{}
 	if err := l.Init(opts...); err != nil {

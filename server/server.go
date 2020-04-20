@@ -1,3 +1,5 @@
+// Package server provides a convenient way to start a new ready to use server with default
+// HTTP API for readiness, liveness and Prometheus metrics.
 package server
 
 import (
@@ -147,7 +149,7 @@ func (server *Server) ListenAndServeContext(ctx context.Context, services ...Ser
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(creds))
 	}
 	if !isSecured {
-		log.Context(ctx).Warn("server: insecured mode is enabled.")
+		server.log.Context(ctx).Warn("server: insecured mode is enabled.")
 		dialOpts = append(dialOpts, grpc.WithInsecure())
 	}
 	for _, s := range services {
@@ -189,7 +191,7 @@ func (server *Server) ListenAndServeContext(ctx context.Context, services ...Ser
 
 	// tell everyone we're ready
 	health.Ready()
-	server.log.Infof("listening at: %s", server.address)
+	server.log.Context(ctx).Infof("listening at: %s", server.address)
 	select {
 	case <-ctx.Done():
 		grpcServer.GracefulStop()
