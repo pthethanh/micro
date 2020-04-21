@@ -1,3 +1,4 @@
+// Package health defines standard interfaces and utilities for health checks.
 package health
 
 import (

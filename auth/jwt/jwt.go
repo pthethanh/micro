@@ -1,3 +1,4 @@
+// Package jwt implements authentication interfaces using JWT.
 package jwt
 
 import (

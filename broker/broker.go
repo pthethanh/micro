@@ -1,8 +1,7 @@
+// Package broker defines standard interface for a message broker.
 package broker
 
 import (
-	"fmt"
-
 	"github.com/pthethanh/micro/health"
 )
 
@@ -32,16 +31,3 @@ type (
 		Unsubscribe() error
 	}
 )
-
-// MustNewMessage return a new Message base on the given info.
-// If any error, a panic will be thrown.
-func MustNewMessage(enc func(v interface{}) ([]byte, error), body interface{}, header map[string]string) *Message {
-	b, err := enc(body)
-	if err != nil {
-		panic(fmt.Sprintf("broker: new message, err: %v", err))
-	}
-	return &Message{
-		Header: header,
-		Body:   b,
-	}
-}

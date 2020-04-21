@@ -1,3 +1,4 @@
+// Package config defines standard interfaces for a config reader/writer.
 package config
 
 type (

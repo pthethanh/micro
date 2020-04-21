@@ -1,3 +1,4 @@
+// Package nats provide a message broker using NATS.
 package nats
 
 import (
@@ -11,34 +12,36 @@ import (
 )
 
 type (
-	// Nats is an implementation of broker.Broker.
+	// Nats is an implementation of broker.Broker using NATS.
 	Nats struct {
-		conn    *nats.Conn
+		conn *nats.Conn
+		sub  chan *broker.Message
+		opts []nats.Option
+
+		addrs   string
 		encoder broker.Encoder
-		sub     chan *broker.Message
 	}
+
+	// Option is an optional configuration.
+	Option func(*Nats)
 )
 
-// New Nats with a configuration and additional options if needed.
-func New(conf Config, additionalOpts ...nats.Option) (*Nats, error) {
-	opts := make([]nats.Option, 0)
-	opts = append(opts, nats.Timeout(conf.Timeout))
-	if conf.Username != "" {
-		opts = append(opts, nats.UserInfo(conf.Username, conf.Password))
+// New return a new NATs message broker.
+func New(addrs string, opts ...Option) (*Nats, error) {
+	n := &Nats{
+		addrs: addrs,
 	}
-	opts = append(opts, additionalOpts...)
-	return NewWithEncoder(conf.Addrs, conf.GetEncoder(), opts...)
-}
-
-// NewWithEncoder return a new NATS client with the given encoder.
-func NewWithEncoder(addrs string, enc broker.Encoder, opts ...nats.Option) (*Nats, error) {
-	conn, err := nats.Connect(addrs, opts...)
+	// apply the options.
+	for _, opt := range opts {
+		opt(n)
+	}
+	conn, err := nats.Connect(n.addrs, n.opts...)
 	if err != nil {
 		return nil, err
 	}
 	return &Nats{
 		conn:    conn,
-		encoder: enc,
+		encoder: n.encoder,
 	}, nil
 }
 

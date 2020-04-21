@@ -4,6 +4,7 @@ package nats_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/pthethanh/micro/broker"
@@ -11,7 +12,7 @@ import (
 )
 
 func TestBroker(t *testing.T) {
-	b, err := nats.NewWithEncoder("nats://localhost:4223", broker.JSONEncoder{})
+	b, err := nats.New("nats://localhost:4222", nats.Encoder(broker.JSONEncoder{}))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -32,7 +33,7 @@ func TestBroker(t *testing.T) {
 		Name: "jack",
 		Age:  22,
 	}
-	m := broker.MustNewMessage(json.Marshal, want, map[string]string{"type": "person"})
+	m := mustNewMessage(json.Marshal, want, map[string]string{"type": "person"})
 	if err := b.Publish("test", m); err != nil {
 		t.Fatal(err)
 	}
@@ -46,5 +47,16 @@ func TestBroker(t *testing.T) {
 	}
 	if typ, ok := e.Message().Header["type"]; !ok || typ != "person" {
 		t.Fatalf("got type=%s, want type=%s", typ, "person")
+	}
+}
+
+func mustNewMessage(enc func(v interface{}) ([]byte, error), body interface{}, header map[string]string) *broker.Message {
+	b, err := enc(body)
+	if err != nil {
+		panic(fmt.Sprintf("broker: new message, err: %v", err))
+	}
+	return &broker.Message{
+		Header: header,
+		Body:   b,
 	}
 }

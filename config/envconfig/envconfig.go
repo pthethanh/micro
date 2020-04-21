@@ -1,3 +1,5 @@
+// Package envconfig provides a convenient way to load config from environment variables
+// into a struct using https://github.com/kelseyhightower/envconfig.
 package envconfig
 
 import (

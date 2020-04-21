@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 
+	"github.com/pthethanh/micro/config"
 	"github.com/pthethanh/micro/config/envconfig"
 )
 
@@ -14,9 +15,9 @@ import (
 // LOG_TIME_FORMAT default:"Mon, 02 Jan 2006 15:04:05 -0700"
 // LOG_OUTPUT, default to be stdout, use file://my.log for writing to a file.
 // LOG_FIELDS is a map of key/value. i.e: name:myservice,site:vietnam
-func FromEnv() Option {
+func FromEnv(readOpts ...config.ReadOption) Option {
 	v := &Options{}
-	if err := envconfig.Read(v); err != nil {
+	if err := envconfig.Read(v, readOpts...); err != nil {
 		log.Println("[ERROR] log: failed to read log environment config, err:", err)
 	}
 	return func(opts *Options) {

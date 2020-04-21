@@ -1,3 +1,4 @@
+// Package auth defines standard interface for authentication.
 package auth
 
 import "context"
