@@ -18,6 +18,7 @@ require (
 	github.com/nats-io/nats-server/v2 v2.1.6 // indirect
 	github.com/nats-io/nats.go v1.9.2
 	github.com/prometheus/client_golang v1.5.0
+	github.com/prometheus/common v0.9.1
 	github.com/sirupsen/logrus v1.4.2
 	golang.org/x/net v0.0.0-20200301022130-244492dfa37a
 	golang.org/x/sys v0.0.0-20200202164722-d101bd2416d5 // indirect

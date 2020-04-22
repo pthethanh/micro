@@ -9,7 +9,7 @@ import (
 	"github.com/pthethanh/micro/config/envconfig"
 )
 
-// FromEnv provides an option to load all options from environment.
+// FromEnv provides an option to load all options from environment variables.
 // LOG_LEVEL default:"5" which is debug level
 // LOG_FORMAT default:"json"
 // LOG_TIME_FORMAT default:"Mon, 02 Jan 2006 15:04:05 -0700"
@@ -20,11 +20,16 @@ func FromEnv(readOpts ...config.ReadOption) Option {
 	if err := envconfig.Read(v, readOpts...); err != nil {
 		log.Println("[ERROR] log: failed to read log environment config, err:", err)
 	}
-	return func(opts *Options) {
-		opts.Fields = v.Fields
-		opts.Format = v.Format
-		opts.Level = v.Level
-		opts.TimeFormat = v.TimeFormat
+	return FromOptions(v)
+}
+
+// FromOptions is an option to create new logger from an existing Options.
+func FromOptions(opts *Options) Option {
+	return func(v *Options) {
+		v.Fields = opts.Fields
+		v.Format = opts.Format
+		v.Level = opts.Level
+		v.TimeFormat = opts.TimeFormat
 	}
 }
 

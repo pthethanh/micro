@@ -6,13 +6,14 @@ import (
 	"time"
 
 	"github.com/globalsign/mgo"
+	"github.com/pthethanh/micro/config"
 	"github.com/pthethanh/micro/config/envconfig"
 	"github.com/pthethanh/micro/health"
 	"github.com/pthethanh/micro/log"
 )
 
 type (
-	// Config hold MongoDB configuration information
+	// Config hold MongoDB common configuration.
 	Config struct {
 		Addrs    []string      `envconfig:"MONGODB_ADDRS" default:"mongodb:27017"`
 		Database string        `envconfig:"MONGODB_DATABASE" default:"goway"`
@@ -24,10 +25,10 @@ type (
 	}
 )
 
-// LoadConfigFromEnv returns a Config object populated from environment variables.
-func LoadConfigFromEnv() *Config {
+// ReadConfigFromEnv returns a Config object populated from environment variables.
+func ReadConfigFromEnv(opts ...config.ReadOption) *Config {
 	var cfg Config
-	_ = envconfig.Read(&cfg)
+	_ = envconfig.Read(&cfg, opts...)
 	return &cfg
 }
 

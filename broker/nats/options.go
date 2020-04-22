@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/nats-io/nats.go"
+	"github.com/prometheus/common/log"
 	"github.com/pthethanh/micro/broker"
 	"github.com/pthethanh/micro/config"
 	"github.com/pthethanh/micro/config/envconfig"
@@ -24,11 +25,16 @@ const (
 	defaultAddr = "nats:4222"
 )
 
-// FromEnv is an option to load common configuration from environment variables.
-func FromEnv(readOpts ...config.ReadOption) Option {
+// FromEnv is an option to create new broker base on environment variables.
+func FromEnv(opts ...config.ReadOption) Option {
+	var conf Config
+	envconfig.Read(&conf, opts...)
+	return FromConfig(conf)
+}
+
+// FromConfig is an option to create new broker from an existing config.
+func FromConfig(conf Config) Option {
 	return func(opts *Nats) {
-		var conf Config
-		envconfig.Read(&conf, readOpts...)
 		opts.addrs = conf.Addrs
 		opts.opts = append(opts.opts, nats.Timeout(conf.Timeout))
 		if conf.Username != "" {
@@ -37,7 +43,10 @@ func FromEnv(readOpts ...config.ReadOption) Option {
 		switch conf.Encoder {
 		case "json":
 			opts.encoder = broker.JSONEncoder{}
+		case "protobuf":
+			opts.encoder = broker.ProtoEncoder{}
 		default:
+			log.Warnf("nats: unrecognized encoder type: %s, switching back to default encoder: protobuf", conf.Encoder)
 			opts.encoder = broker.ProtoEncoder{}
 		}
 	}

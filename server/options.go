@@ -65,10 +65,17 @@ type (
 func FromEnv(configOpts ...config.ReadOption) Option {
 	conf := Config{}
 	envconfig.Read(&conf, configOpts...)
+	return func(opts *Server) {
+		FromConfig(conf)(opts)
+		AddressFromEnv()(opts)
+	}
+}
+
+// FromConfig is an option to create a new server from an existing config.
+func FromConfig(conf Config) Option {
 	return func(server *Server) {
 		opts := []Option{
-			// Override ADDRESS if PORT is set, mostly for cloud.
-			AddressFromEnv(),
+			Address(conf.Address),
 			MetricsPaths(conf.ReadinessPath, conf.LivenessPath, conf.MetricsPath),
 			TLS(conf.TLSKeyFile, conf.TLSCertFile),
 			Timeout(conf.ReadTimeout, conf.WriteTimeout),

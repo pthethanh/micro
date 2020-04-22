@@ -25,6 +25,11 @@ func Validate(v interface{}) error {
 	return New().Struct(v)
 }
 
+// Var validates a single variable using tag style validation.
+func Var(field interface{}, tag string) error {
+	return New().Var(field, tag)
+}
+
 // RegisterValidation adds a validation with the given tag
 //
 // NOTES:
