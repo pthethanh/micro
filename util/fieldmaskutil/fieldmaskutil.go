@@ -1,3 +1,4 @@
+// Package fieldmaskutil provides convenient utilities for working with field_mask.
 package fieldmaskutil
 
 import (
@@ -12,6 +13,11 @@ var (
 	matchAllCap   = regexp.MustCompile("([a-z0-9])([A-Z])")
 )
 
+type (
+	// TransformFunc is a filed path transform func.
+	TransformFunc = func(string) string
+)
+
 // ToSnakeCase transform the given string to snake_case.
 func ToSnakeCase(str string) string {
 	snake := matchFirstCap.ReplaceAllString(str, "${1}_${2}")
@@ -19,20 +25,22 @@ func ToSnakeCase(str string) string {
 	return strings.ToLower(snake)
 }
 
-// TrimPrefix remove the prefix in the field mask.
-func TrimPrefix(paths []string, prefix string) []string {
-	rs := make([]string, 0)
-	for _, p := range paths {
-		rs = append(rs, strings.TrimPrefix(p, prefix))
+// TrimPrefix is a transform func to remove the prefix of the field.
+func TrimPrefix(prefix string) TransformFunc {
+	return func(s string) string {
+		return strings.TrimPrefix(s, prefix)
 	}
-	return rs
 }
 
 // GetValidFields return fields match with the value and definition of the given struct.
-func GetValidFields(paths []string, req interface{}) []string {
+// Transformation rules on the result path can be given via transform options.
+func GetValidFields(paths []string, req interface{}, opts ...TransformFunc) []string {
 	npaths := make([]string, 0)
 	for _, pth := range paths {
 		if pth, ok := IsValid(pth, req); ok {
+			for _, opt := range opts {
+				pth = opt(pth)
+			}
 			npaths = append(npaths, pth)
 		}
 	}

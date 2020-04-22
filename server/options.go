@@ -91,6 +91,14 @@ func FromEnv(configOpts ...config.ReadOption) Option {
 	}
 }
 
+// Address is an option to set address.
+// Default address is :8000
+func Address(addr string) Option {
+	return func(opts *Server) {
+		opts.address = addr
+	}
+}
+
 // StreamInterceptors is an option allows user to add additional stream interceptors to the server.
 func StreamInterceptors(interceptors ...grpc.StreamServerInterceptor) Option {
 	return func(opts *Server) {

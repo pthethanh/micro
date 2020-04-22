@@ -108,8 +108,22 @@ func TestGetValidFieldMask(t *testing.T) {
 }
 
 func TestTrimPrefix(t *testing.T) {
-	rs := fieldmaskutil.TrimPrefix([]string{"comment.status", "comment.content"}, "comment.")
-	if rs[0] != "status" || rs[1] != "content" {
-		t.Fatalf("got rs=%v, want rs=%v", rs, []string{"status", "content"})
+	v := MyStruct{
+		Meta:     &Meta{},
+		NextMeta: &Meta{},
+	}
+	paths := fieldmaskutil.GetValidFields([]string{
+		"meta.values",
+		"NextMeta.values",
+	}, v, fieldmaskutil.TrimPrefix("meta."), fieldmaskutil.ToSnakeCase)
+	want := 2
+	if len(paths) != want {
+		t.Fatalf("got len(paths)=%d, want len(paths)=%d", len(paths), want)
+	}
+	if paths[0] != "values" {
+		t.Errorf("got field=%s, want field without prefix=%s", paths[0], "values")
+	}
+	if paths[1] != "next_meta.values" {
+		t.Errorf("got field=%s, want field with snake_case=%s", paths[1], "next_meta.values")
 	}
 }

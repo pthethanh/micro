@@ -1,3 +1,4 @@
+// Package validator provides convenient utilities for validation using https://github.com/go-playground/validator.
 package validator
 
 import (

@@ -22,22 +22,16 @@ func ExampleListenAndServeContext() {
 	}
 }
 
-func ExampleNewFromEnv() {
-	srv := server.NewFromEnv()
-	if err := srv.ListenAndServe( /*services ...Service*/ ); err != nil {
-		panic(err)
-	}
-}
-
 func ExampleNew_fromEnvironmentVariables() {
-	srv := server.New("", server.FromEnv())
+	srv := server.New(server.FromEnv())
 	if err := srv.ListenAndServe( /*services ...Service*/ ); err != nil {
 		log.Panic(err)
 	}
 }
 
 func ExampleNew_withOptions() {
-	srv := server.New(":8080",
+	srv := server.New(
+		server.Address(":8080"),
 		server.AuthJWT("secret"),
 		server.Logger(log.Fields("service", "micro")),
 	)
@@ -48,7 +42,8 @@ func ExampleNew_withOptions() {
 
 func ExampleNew_withSinglePageApplication() {
 	// See https://github.com/pthethanh/micro/tree/master/examples/helloworld/web for a full runnable example.
-	srv := server.New(":8080",
+	srv := server.New(
+		server.Address(":8080"),
 		// routes all calls to /api/ to gRPC Gateway handler to avoid conlision with server.Web
 		server.APIPrefix("/api/"),
 		// serve SPA at /
@@ -63,7 +58,7 @@ func ExampleNew_withInternalHTTPAPI() {
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("doc"))
 	})
-	srv := server.New("",
+	srv := server.New(
 		server.FromEnv(),
 		server.HTTPHandler("/doc", h),
 	)

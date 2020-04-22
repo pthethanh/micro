@@ -45,7 +45,7 @@ func main() {
 		server.APIPrefix("/api/"),
 		server.Web("public", "index.html"),
 	}
-	if err := server.New("", opts...).ListenAndServe(srv); err != nil {
+	if err := server.New(opts...).ListenAndServe(srv); err != nil {
 		log.Panic(err)
 	}
 }

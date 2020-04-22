@@ -86,16 +86,18 @@ type (
 	}
 )
 
-// New return new server
-func New(addr string, ops ...Option) *Server {
-	server := &Server{
-		address: addr,
-	}
+// New return new server with the given options.
+// If address is not set, default address ":8000" will be used.
+func New(ops ...Option) *Server {
+	server := &Server{}
 	for _, op := range ops {
 		op(server)
 	}
 	if server.log == nil {
 		server.log = log.Root()
+	}
+	if server.address == "" {
+		server.address = defaultAddr
 	}
 	return server
 }
@@ -255,12 +257,17 @@ func (server Server) getMetricsPath() string {
 	return server.metricsPath
 }
 
-// WithOptions allows add more options to the server after created.
-func (server *Server) WithOptions(opts ...Option) *Server {
+// With allows user to add more options to the server after created.
+func (server *Server) With(opts ...Option) *Server {
 	for _, op := range opts {
 		op(server)
 	}
 	return server
+}
+
+// Address return address that the server is listening.
+func (server *Server) Address() string {
+	return server.address
 }
 
 func (server Server) getAPIPrefix() string {

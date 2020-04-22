@@ -1,3 +1,4 @@
+// Package mgoutil provides utilities for working with mgo library.
 package mgoutil
 
 import (

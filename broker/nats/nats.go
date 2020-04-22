@@ -27,18 +27,22 @@ type (
 )
 
 // New return a new NATs message broker.
-func New(addrs string, opts ...Option) (*Nats, error) {
-	n := &Nats{
-		addrs: addrs,
-	}
+// If address is not set, default address "nats:4222" will be used.
+func New(opts ...Option) (*Nats, error) {
+	n := &Nats{}
 	// apply the options.
 	for _, opt := range opts {
 		opt(n)
 	}
+	if n.addrs == "" {
+		n.addrs = defaultAddr
+	}
+	log.Debugf("nats: connecting to %s", n.addrs)
 	conn, err := nats.Connect(n.addrs, n.opts...)
 	if err != nil {
 		return nil, err
 	}
+	log.Debugf("nats: connected to %s successfully", n.addrs)
 	return &Nats{
 		conn:    conn,
 		encoder: n.encoder,

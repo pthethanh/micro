@@ -20,6 +20,10 @@ type (
 	}
 )
 
+const (
+	defaultAddr = "nats:4222"
+)
+
 // FromEnv is an option to load common configuration from environment variables.
 func FromEnv(readOpts ...config.ReadOption) Option {
 	return func(opts *Nats) {
@@ -43,6 +47,14 @@ func FromEnv(readOpts ...config.ReadOption) Option {
 func Encoder(encoder broker.Encoder) Option {
 	return func(opts *Nats) {
 		opts.encoder = encoder
+	}
+}
+
+// Address is an option to set target addresses of NATS server.
+// Multiple addresses are separated by comma.
+func Address(addrs string) Option {
+	return func(opts *Nats) {
+		opts.addrs = addrs
 	}
 }
 
