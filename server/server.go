@@ -38,10 +38,11 @@ type (
 		metricsPath   string
 
 		// HTTP
-		readTimeout  time.Duration
-		writeTimeout time.Duration
-		routes       []route
-		apiPrefix    string
+		readTimeout      time.Duration
+		writeTimeout     time.Duration
+		routes           []route
+		apiPrefix        string
+		httpInterceptors []func(http.Handler) http.Handler
 
 		// Needs to be set manually
 		healthChecks    []health.CheckFunc
@@ -176,9 +177,13 @@ func (server *Server) ListenAndServeContext(ctx context.Context, services ...Ser
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, os.Kill, syscall.SIGTERM, syscall.SIGKILL)
 
+	handler := grpcHandlerFunc(isSecured, grpcServer, mux)
+	for i := len(server.httpInterceptors) - 1; i >= 0; i-- {
+		handler = server.httpInterceptors[i](handler)
+	}
 	httpServer := &http.Server{
 		Addr:         server.address,
-		Handler:      grpcHandlerFunc(isSecured, grpcServer, mux),
+		Handler:      handler,
 		ReadTimeout:  server.readTimeout,
 		WriteTimeout: server.writeTimeout,
 	}

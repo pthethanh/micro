@@ -1,12 +1,15 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"net/http"
+	"net/http/pprof"
 	"net/textproto"
 	"os"
 	"time"
 
+	"github.com/gorilla/handlers"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/pthethanh/micro/auth"
 	"github.com/pthethanh/micro/auth/jwt"
@@ -15,7 +18,11 @@ import (
 	"github.com/pthethanh/micro/health"
 	"github.com/pthethanh/micro/log"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/status"
+
+	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 )
 
 const (
@@ -57,6 +64,19 @@ type (
 		JWTSecret string `envconfig:"JWT_SECRET"`
 		// ContextLogger is an option to enable context logger with request-id.
 		ContextLogger bool `envconfig:"CONTEXT_LOGGER" default:"true"`
+
+		// Recovery is a short way to enable recovery interceptors for both unary and stream handlers.
+		Recovery bool `encvonfig:"RECOVERY" default:"true"`
+
+		// CORS options
+		CORSAllowedHeaders    []string `envconfig:"CORS_ALLOWED_HEADERS"`
+		CORSAllowedMethods    []string `envconfig:"CORS_ALLOWED_METHODS"`
+		CORSAllowedOrigins    []string `envconfig:"CORS_ALLOWED_ORIGINS"`
+		CORSAllowedCredential bool     `envconfig:"CORS_ALLOWED_CREDENTIAL" default:"false"`
+
+		// PProf options
+		PProf       bool   `envconfig:"PPROF" default:"false"`
+		PProfPrefix string `envconfig:"PPROF_PREFIX"`
 	}
 )
 
@@ -81,10 +101,14 @@ func FromConfig(conf Config) Option {
 			Timeout(conf.ReadTimeout, conf.WriteTimeout),
 			AuthJWT(conf.JWTSecret),
 			APIPrefix(conf.APIPrefix),
+			CORS(conf.CORSAllowedCredential, conf.CORSAllowedHeaders, conf.CORSAllowedMethods, conf.CORSAllowedOrigins),
 		}
 		if len(conf.Web) == 2 {
-			opts = append(opts, Web(conf.Web[0], conf.Web[1]))
+			pub := conf.Web[0]
+			idx := conf.Web[1]
+			opts = append(opts, Web(pub, idx))
 		}
+		// context logger
 		if conf.ContextLogger {
 			logger := log.Root()
 			if conf.Name != "" {
@@ -92,6 +116,14 @@ func FromConfig(conf Config) Option {
 			}
 			opts = append(opts, Logger(logger))
 		}
+		// recovery
+		if conf.Recovery {
+			opts = append(opts, Recovery(nil))
+		}
+		if conf.PProf {
+			opts = append(opts, PProf(conf.PProfPrefix))
+		}
+		// apply all
 		for _, opt := range opts {
 			opt(server)
 		}
@@ -239,6 +271,14 @@ func HTTPHandler(path string, h http.Handler) Option {
 	}
 }
 
+// HTTPInterceptors is an option allows user to set additional interceptors to the root HTTP handler.
+// These interceptors are applied to both gRPC and HTTP requests of both public and internal APIs.
+func HTTPInterceptors(interceptors ...func(http.Handler) http.Handler) Option {
+	return func(opts *Server) {
+		opts.httpInterceptors = append(opts.httpInterceptors, interceptors...)
+	}
+}
+
 // APIPrefix is an option allows user to route only the specified path prefix to gRPC Gateway.
 // This option is used mostly when you serve both gRPC APIs along with other internal HTTP APIs.
 // The default prefix is /, which will route all paths to gRPC Gateway.
@@ -261,6 +301,71 @@ func Web(dir string, index string) Option {
 	}
 }
 
+// Recovery is an option allows user to add an ability to recover a handler/API from a panic.
+// This applies for both unary and stream handlers/APIs.
+// If the provided error handler is nil, a default error handler will be used.
+func Recovery(handler func(context.Context, interface{}) error) Option {
+	return func(opts *Server) {
+		if handler == nil {
+			if opts.log == nil {
+				opts.log = log.Root()
+			}
+			handler = recoveryHandler(opts.log)
+		}
+		recoverOpt := grpc_recovery.WithRecoveryHandlerContext(handler)
+		opts.unaryInterceptors = append(opts.unaryInterceptors, grpc_recovery.UnaryServerInterceptor(recoverOpt))
+		opts.streamInterceptors = append(opts.streamInterceptors, grpc_recovery.StreamServerInterceptor(recoverOpt))
+	}
+}
+
+// CORS is an option allows users to enable CORS on the server.
+func CORS(allowCredential bool, headers, methods, origins []string) Option {
+	return func(opts *Server) {
+		options := []handlers.CORSOption{}
+		if allowCredential {
+			options = append(options, handlers.AllowCredentials())
+		}
+		if headers != nil {
+			options = append(options, handlers.AllowedHeaders(headers))
+		}
+		if methods != nil {
+			options = append(options, handlers.AllowedMethods(methods))
+		}
+		if origins != nil {
+			options = append(options, handlers.AllowedOrigins(origins))
+		}
+		if len(options) > 0 {
+			opts.httpInterceptors = append(opts.httpInterceptors, handlers.CORS(options...))
+		}
+	}
+}
+
+// PProf is an option allows user to enable Go profiler.
+func PProf(pathPrefix string) Option {
+	return func(opts *Server) {
+		opts.routes = append(opts.routes, route{
+			p: pathPrefix + "/debug/pprof/",
+			h: http.HandlerFunc(pprof.Index),
+		})
+		opts.routes = append(opts.routes, route{
+			p: pathPrefix + "/debug/pprof/cmdline",
+			h: http.HandlerFunc(pprof.Cmdline),
+		})
+		opts.routes = append(opts.routes, route{
+			p: pathPrefix + "/debug/pprof/profile",
+			h: http.HandlerFunc(pprof.Profile),
+		})
+		opts.routes = append(opts.routes, route{
+			p: pathPrefix + "/debug/pprof/symbol",
+			h: http.HandlerFunc(pprof.Symbol),
+		})
+		opts.routes = append(opts.routes, route{
+			p: pathPrefix + "/debug/pprof/trace",
+			h: http.HandlerFunc(pprof.Trace),
+		})
+	}
+}
+
 // DefaultHeaderMatcher is an ServerMuxOption that forward
 // header keys request-id, api-key to gRPC Context.
 func DefaultHeaderMatcher() runtime.ServeMuxOption {
@@ -280,4 +385,13 @@ func HeaderMatcher(keys []string) runtime.ServeMuxOption {
 		}
 		return runtime.DefaultHeaderMatcher(key)
 	})
+}
+
+// recoveryHandler print the context log to the configured writer and return
+// a general error to the caller.
+func recoveryHandler(l log.Logger) func(context.Context, interface{}) error {
+	return func(ctx context.Context, p interface{}) error {
+		l.Context(ctx).Errorf("panic: %v", p)
+		return status.Errorf(codes.Internal, codes.Internal.String())
+	}
 }

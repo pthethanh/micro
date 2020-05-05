@@ -5,7 +5,7 @@ type (
 	PublishOptions struct {
 	}
 
-	// SubscribeOptions is a configuration holder for subsciptions.
+	// SubscribeOptions is a configuration holder for subscriptions.
 	SubscribeOptions struct {
 		// AutoAck defaults to true. When a handler returns
 		// with a nil error the message is acked.
