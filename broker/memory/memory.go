@@ -14,6 +14,7 @@ import (
 )
 
 type (
+	// Broker is a memory message broker.
 	Broker struct {
 		subs map[string][]*subscriber
 		mu   *sync.RWMutex
