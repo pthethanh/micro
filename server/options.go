@@ -291,9 +291,14 @@ func APIPrefix(prefix string) Option {
 // Web is an option to allows user to serve Web/Single Page Application
 // along with API Gateway and gRPC. API Gateway must be served in a
 // different path prefix different from root path / by using server.APIPrefix(prefix),
-// otherwise a panic will be thrown.
+// otherwise API Path will be set to /api
 func Web(dir string, index string) Option {
 	return func(opts *Server) {
+		defaultPrefix := "/api"
+		if opts.apiPrefix == "/" {
+			opts.apiPrefix = defaultPrefix
+			log.Warnf("api prefix is set to %s to avoid collision with web prefix at /", defaultPrefix)
+		}
 		HTTPHandler("/", spaHandler{
 			index: index,
 			dir:   dir,
