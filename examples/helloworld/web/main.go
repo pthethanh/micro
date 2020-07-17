@@ -43,7 +43,7 @@ func main() {
 	opts := []server.Option{
 		server.AddressFromEnv(),
 		server.APIPrefix("/api/"),
-		server.Web("public", "index.html"),
+		server.Web("/", "public", "index.html"),
 	}
 	if err := server.New(opts...).ListenAndServe(srv); err != nil {
 		log.Panic(err)

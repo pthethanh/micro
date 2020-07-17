@@ -44,10 +44,10 @@ func ExampleNew_withSinglePageApplication() {
 	// See https://github.com/pthethanh/micro/tree/master/examples/helloworld/web for a full runnable example.
 	srv := server.New(
 		server.Address(":8080"),
-		// routes all calls to /api/ to gRPC Gateway handler to avoid conlision with server.Web
+		// routes all calls to /api/ to gRPC Gateway handlers.
 		server.APIPrefix("/api/"),
-		// serve SPA at /
-		server.Web("public", "index.html"),
+		// serve web at /
+		server.Web("/", "public", "index.html"),
 	)
 	if err := srv.ListenAndServe( /*services ...Service*/ ); err != nil {
 		panic(err)

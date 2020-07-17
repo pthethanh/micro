@@ -54,11 +54,12 @@ type (
 		// WriteTimeout is write timeout of both gRPC and HTTP server.
 		WriteTimeout time.Duration `envconfig:"WRITE_TIMEOUT" default:"30s"`
 		// APIPrefix is path prefix that gRPC API Gateway is routed to.
-		APIPrefix string `envconfig:"API_PREFIX" default:"/"`
-		// Web is a short config for serving web application.
-		// The config format is: path-to-public-dir,index-file-name
-		// Example: public,index.html
-		Web []string `envconfig:"WEB"`
+		APIPrefix string `envconfig:"API_PREFIX" default:"/api/"`
+
+		// Web options
+		WebDir    string `envconfig:"WEB_DIR"`
+		WebIndex  string `envconfig:"WEB_INDEX" default:"index.html"`
+		WebPrefix string `envconfig:"WEB_PREFIX" default:"/"`
 
 		// JWTSecret is a short way to enable JWT Authentictor with the secret.
 		JWTSecret string `envconfig:"JWT_SECRET"`
@@ -103,10 +104,8 @@ func FromConfig(conf Config) Option {
 			APIPrefix(conf.APIPrefix),
 			CORS(conf.CORSAllowedCredential, conf.CORSAllowedHeaders, conf.CORSAllowedMethods, conf.CORSAllowedOrigins),
 		}
-		if len(conf.Web) == 2 {
-			pub := conf.Web[0]
-			idx := conf.Web[1]
-			opts = append(opts, Web(pub, idx))
+		if conf.WebDir != "" {
+			opts = append(opts, Web(conf.WebPrefix, conf.WebDir, conf.WebIndex))
 		}
 		// context logger
 		if conf.ContextLogger {
@@ -290,16 +289,13 @@ func APIPrefix(prefix string) Option {
 
 // Web is an option to allows user to serve Web/Single Page Application
 // along with API Gateway and gRPC. API Gateway must be served in a
-// different path prefix different from root path / by using server.APIPrefix(prefix),
-// otherwise API Path will be set to /api
-func Web(dir string, index string) Option {
+// different path prefix with the web path prefix.
+func Web(pathPrefix, dir, index string) Option {
+	if pathPrefix == "" {
+		pathPrefix = "/"
+	}
 	return func(opts *Server) {
-		defaultPrefix := "/api"
-		if opts.apiPrefix == "/" {
-			opts.apiPrefix = defaultPrefix
-			log.Warnf("api prefix is set to %s to avoid collision with web prefix at /", defaultPrefix)
-		}
-		HTTPHandler("/", spaHandler{
+		HTTPHandler(pathPrefix, spaHandler{
 			index: index,
 			dir:   dir,
 		})(opts)
