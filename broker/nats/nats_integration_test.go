@@ -3,6 +3,7 @@
 package nats_test
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"testing"
@@ -12,10 +13,11 @@ import (
 )
 
 func TestBroker(t *testing.T) {
-	b, err := nats.New("nats://localhost:4222", nats.Encoder(broker.JSONEncoder{}))
-	if err != nil {
+	b := nats.New(nats.Address("nats://localhost:4222"), nats.Encoder(broker.JSONEncoder{}))
+	if err := b.Connect(); err != nil {
 		t.Fatal(err)
 	}
+	defer b.Close(context.Background())
 	type Person struct {
 		Name string
 		Age  int
