@@ -4,11 +4,13 @@ package nats
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/nats-io/nats.go"
 	"github.com/pthethanh/micro/broker"
 	"github.com/pthethanh/micro/health"
 	"github.com/pthethanh/micro/log"
+	"github.com/pthethanh/micro/util/syncutil"
 )
 
 type (
@@ -28,7 +30,7 @@ type (
 
 // New return a new NATs message broker.
 // If address is not set, default address "nats:4222" will be used.
-func New(opts ...Option) (*Nats, error) {
+func New(opts ...Option) *Nats {
 	n := &Nats{}
 	// apply the options.
 	for _, opt := range opts {
@@ -37,16 +39,21 @@ func New(opts ...Option) (*Nats, error) {
 	if n.addrs == "" {
 		n.addrs = defaultAddr
 	}
+	return &Nats{
+		encoder: n.encoder,
+	}
+}
+
+// Connect connect to target server.
+func (n *Nats) Connect() error {
 	log.Debugf("nats: connecting to %s", n.addrs)
 	conn, err := nats.Connect(n.addrs, n.opts...)
 	if err != nil {
-		return nil, err
+		return err
 	}
+	n.conn = conn
 	log.Debugf("nats: connected to %s successfully", n.addrs)
-	return &Nats{
-		conn:    conn,
-		encoder: n.encoder,
-	}, nil
+	return nil
 }
 
 // Publish implements broker.Broker interface.
@@ -105,8 +112,22 @@ func (n *Nats) Subscribe(topic string, h broker.Handler, opts ...broker.Subscrib
 func (n *Nats) HealthCheck() health.CheckFunc {
 	return health.CheckFunc(func(context.Context) error {
 		if !n.conn.IsConnected() {
-			return fmt.Errorf("server status=%d", n.conn.Status())
+			return fmt.Errorf("nats: server status=%d", n.conn.Status())
 		}
 		return nil
 	})
+}
+
+// Close flush in-flight messages and close the underlying connection.
+func (n *Nats) Close(ctx context.Context) error {
+	if err := syncutil.WaitCtx(ctx, 5*time.Second, func(ctx context.Context) {
+		err := n.conn.FlushWithContext(ctx)
+		if err != nil {
+			log.Context(ctx).Errorf("nats: flush failed, err: ", err)
+		}
+		n.conn.Close()
+	}); err != nil {
+		log.Context(ctx).Errorf("nats: %v", err)
+	}
+	return nil
 }
