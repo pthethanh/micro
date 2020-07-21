@@ -1,6 +1,7 @@
 package memory
 
 import (
+	"context"
 	"sync"
 	"time"
 
@@ -19,7 +20,7 @@ type (
 )
 
 var (
-	_ cache.Cache = New()
+	_ cache.Cacher = New()
 )
 
 // New return new memory cache.
@@ -32,14 +33,14 @@ func New() *Memory {
 }
 
 // Get a value
-func (m *Memory) Get(key string) (interface{}, error) {
+func (m *Memory) Get(ctx context.Context, key string) (interface{}, error) {
 	m.RLock()
 	defer m.RUnlock()
 	if val, ok := m.values[key]; ok {
 		// if cleaner has not done its job yet, go ahead to delete
 		if val.expired() {
 			go func() {
-				m.Delete(key)
+				m.Delete(ctx, key)
 			}()
 			return nil, cache.ErrNotFound
 		}
@@ -49,7 +50,7 @@ func (m *Memory) Get(key string) (interface{}, error) {
 }
 
 // Set a value
-func (m *Memory) Set(key string, val interface{}, opts ...cache.SetOption) error {
+func (m *Memory) Set(ctx context.Context, key string, val interface{}, opts ...cache.SetOption) error {
 	m.Lock()
 	defer m.Unlock()
 	opt := &cache.SetOptions{}
@@ -65,7 +66,7 @@ func (m *Memory) Set(key string, val interface{}, opts ...cache.SetOption) error
 }
 
 // Delete a value
-func (m *Memory) Delete(key string) error {
+func (m *Memory) Delete(ctx context.Context, key string) error {
 	m.Lock()
 	defer m.Unlock()
 	delete(m.values, key)
