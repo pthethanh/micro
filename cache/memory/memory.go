@@ -14,7 +14,7 @@ type (
 		sync.RWMutex
 	}
 	value struct {
-		val interface{}
+		val []byte
 		exp time.Time
 	}
 )
@@ -33,7 +33,7 @@ func New() *Memory {
 }
 
 // Get a value
-func (m *Memory) Get(ctx context.Context, key string) (interface{}, error) {
+func (m *Memory) Get(ctx context.Context, key string) ([]byte, error) {
 	m.RLock()
 	defer m.RUnlock()
 	if val, ok := m.values[key]; ok {
@@ -50,7 +50,7 @@ func (m *Memory) Get(ctx context.Context, key string) (interface{}, error) {
 }
 
 // Set a value
-func (m *Memory) Set(ctx context.Context, key string, val interface{}, opts ...cache.SetOption) error {
+func (m *Memory) Set(ctx context.Context, key string, val []byte, opts ...cache.SetOption) error {
 	m.Lock()
 	defer m.Unlock()
 	opt := &cache.SetOptions{}

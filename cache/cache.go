@@ -16,9 +16,9 @@ type (
 	// Cacher is interface for a cache service.
 	Cacher interface {
 		// Get a value, return ErrNotFound if key not found.
-		Get(ctx context.Context, key string) (interface{}, error)
+		Get(ctx context.Context, key string) ([]byte, error)
 		// Set a value
-		Set(ctx context.Context, key string, val interface{}, opts ...SetOption) error
+		Set(ctx context.Context, key string, val []byte, opts ...SetOption) error
 		// Delete a value
 		Delete(ctx context.Context, key string) error
 	}

@@ -14,6 +14,10 @@ type (
 	}
 )
 
+var (
+	_ cache.Cacher = &Redis{}
+)
+
 // New return a cacher using Redis.
 func New(opts *redis.UniversalOptions) *Redis {
 	return &Redis{
@@ -22,17 +26,16 @@ func New(opts *redis.UniversalOptions) *Redis {
 }
 
 // Get a value, return cache.ErrNotFound if key not found.
-func (r *Redis) Get(ctx context.Context, key string) (interface{}, error) {
+func (r *Redis) Get(ctx context.Context, key string) ([]byte, error) {
 	cmd := r.conn.Get(ctx, key)
 	if cmd.Err() != nil {
 		return nil, cmd.Err()
 	}
-	// TODO implement  me
-	return nil, nil
+	return cmd.Bytes()
 }
 
 // Set a value
-func (r *Redis) Set(ctx context.Context, key string, val interface{}, opts ...cache.SetOption) error {
+func (r *Redis) Set(ctx context.Context, key string, val []byte, opts ...cache.SetOption) error {
 	opt := &cache.SetOptions{}
 	opt.Apply(opts...)
 	if cmd := r.conn.Set(ctx, key, val, opt.TTL); cmd.Err() != nil {
