@@ -75,6 +75,11 @@ func (sub *subscriber) Unsubscribe() error {
 	return nil
 }
 
+// Connect implements broker.Broker interface.
+func (br *Broker) Connect() error {
+	return nil
+}
+
 // Publish implements broker.Broker interface.
 func (br *Broker) Publish(topic string, m *broker.Message, opts ...broker.PublishOption) error {
 	br.mu.RLock()
@@ -143,4 +148,9 @@ func (br *Broker) HealthCheck() health.CheckFunc {
 	return func(ctx context.Context) error {
 		return nil
 	}
+}
+
+// Close implements broker.Broker interface.
+func (br *Broker) Close(ctx context.Context) error {
+	return nil
 }
