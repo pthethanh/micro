@@ -28,6 +28,9 @@ func New(opts *redis.UniversalOptions) *Redis {
 // Get a value, return cache.ErrNotFound if key not found.
 func (r *Redis) Get(ctx context.Context, key string) ([]byte, error) {
 	cmd := r.conn.Get(ctx, key)
+	if cmd.Err() == redis.Nil {
+		return nil, cache.ErrNotFound
+	}
 	if cmd.Err() != nil {
 		return nil, cmd.Err()
 	}
@@ -46,7 +49,7 @@ func (r *Redis) Set(ctx context.Context, key string, val []byte, opts ...cache.S
 
 // Delete a value
 func (r *Redis) Delete(ctx context.Context, key string) error {
-	if cmd := r.conn.Del(ctx, key); cmd.Err() != nil {
+	if cmd := r.conn.Del(ctx, key); cmd.Err() != nil && cmd.Err() != redis.Nil {
 		return cmd.Err()
 	}
 	return nil

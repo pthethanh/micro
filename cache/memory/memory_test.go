@@ -15,7 +15,11 @@ func TestCache(t *testing.T) {
 		t.Fatal(err)
 	}
 	if v, err := m.Get(context.Background(), "k"); err != nil || string(v) != "v" {
-		t.Fatal(err)
+		t.Fatalf("got result=%v, err=%v, want result=%v, err=%v", string(v), err, "v", nil)
+	}
+
+	if _, err := m.Get(context.Background(), "k-notfound"); err != cache.ErrNotFound {
+		t.Fatalf("got err=%v, want err=%v", err, cache.ErrNotFound)
 	}
 }
 
