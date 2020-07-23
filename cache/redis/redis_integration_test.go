@@ -1,3 +1,5 @@
+//+build integration_test
+
 package redis_test
 
 import (
