@@ -1,6 +1,9 @@
 package cache
 
-import "time"
+import (
+	"context"
+	"time"
+)
 
 type (
 	// SetOptions hold options when setting value for a key.
@@ -10,14 +13,14 @@ type (
 	// SetOption is option when setting value for a key.
 	SetOption func(*SetOptions)
 
-	// Cache is interface for a cache service.
-	Cache interface {
+	// Cacher is interface for a cache service.
+	Cacher interface {
 		// Get a value, return ErrNotFound if key not found.
-		Get(key string) (interface{}, error)
+		Get(ctx context.Context, key string) ([]byte, error)
 		// Set a value
-		Set(key string, val interface{}, opts ...SetOption) error
+		Set(ctx context.Context, key string, val []byte, opts ...SetOption) error
 		// Delete a value
-		Delete(key string) error
+		Delete(ctx context.Context, key string) error
 	}
 )
 
@@ -28,6 +31,7 @@ func TTL(ttl time.Duration) SetOption {
 	}
 }
 
+// Apply apply the options.
 func (opt *SetOptions) Apply(opts ...SetOption) {
 	for _, op := range opts {
 		op(opt)
