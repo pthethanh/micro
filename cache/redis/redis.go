@@ -10,6 +10,7 @@ import (
 type (
 	// Redis is an implementation of cache.Cacher using Redis.
 	Redis struct {
+		opts *redis.UniversalOptions
 		conn redis.UniversalClient
 	}
 )
@@ -19,10 +20,15 @@ var (
 )
 
 // New return a cacher using Redis.
-func New(opts *redis.UniversalOptions) *Redis {
-	return &Redis{
-		conn: redis.NewUniversalClient(opts),
+func New(opts ...Option) *Redis {
+	r := &Redis{
+		opts: &redis.UniversalOptions{},
 	}
+	for _, op := range opts {
+		op(r)
+	}
+	r.conn = redis.NewUniversalClient(r.opts)
+	return r
 }
 
 // Get a value, return cache.ErrNotFound if key not found.

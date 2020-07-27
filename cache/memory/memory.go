@@ -9,6 +9,7 @@ import (
 )
 
 type (
+	// Memory is an implementation of cache.Cacher
 	Memory struct {
 		values map[string]value
 		sync.RWMutex

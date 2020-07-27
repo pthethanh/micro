@@ -8,13 +8,12 @@ import (
 	"testing"
 	"time"
 
-	rdis "github.com/go-redis/redis/v8"
 	"github.com/pthethanh/micro/cache"
 	"github.com/pthethanh/micro/cache/redis"
 )
 
 func TestCache(t *testing.T) {
-	var m cache.Cacher = redis.New(&rdis.UniversalOptions{})
+	var m cache.Cacher = redis.New(redis.FromEnv())
 	// string
 	if err := m.Set(context.Background(), "k", []byte("v")); err != nil {
 		t.Fatal(err)
@@ -56,7 +55,7 @@ func TestCache(t *testing.T) {
 }
 
 func TestCacheTimeout(t *testing.T) {
-	var m cache.Cacher = redis.New(&rdis.UniversalOptions{})
+	var m cache.Cacher = redis.New(redis.FromEnv())
 	// not ok
 	if err := m.Set(context.Background(), "k2", []byte("v"), cache.TTL(500*time.Millisecond)); err != nil {
 		t.Fatal(err)
@@ -77,7 +76,7 @@ func TestCacheTimeout(t *testing.T) {
 }
 
 func TestCacheDelete(t *testing.T) {
-	var m cache.Cacher = redis.New(&rdis.UniversalOptions{})
+	var m cache.Cacher = redis.New(redis.FromEnv())
 	if err := m.Set(context.Background(), "k3", []byte("v")); err != nil {
 		t.Fatal(err)
 	}
