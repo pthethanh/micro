@@ -15,12 +15,15 @@ func NewHTTPContextHandler(l Logger) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
 			// allow requests in microservices environment can be traced.
-			requestID := r.Header.Get("request-id")
-			if requestID == "" {
-				requestID = uuid.New().String()
+			correlationID := r.Header.Get("X-Correlation-ID")
+			if correlationID == "" {
+				correlationID = r.Header.Get("X-Request-ID")
+			}
+			if correlationID == "" {
+				correlationID = uuid.New().String()
 			}
 			logger := l.Fields(
-				"request_id", requestID,
+				"correlation_id", correlationID,
 				"path", r.URL.Path,
 				"remote_addr", r.RemoteAddr,
 				"method", r.Method)

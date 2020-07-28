@@ -11,13 +11,13 @@ import (
 )
 
 // StreamInterceptor returns a grpc.StreamServerInterceptor that provides
-// a context logger with request_id. If a request-id is already specified
-// in the metadata, it will be used. Otherwise a new one will be generated.
+// a context logger with correlation-id. It will try to looks for value of X-Correlation-ID or X-Request-ID
+// in the metadata of the incoming request. If no value is provided, a new one will be generated.
 // For REST API, use Grpc-Metadata-Request-Id as header key for passing a request id.
 func StreamInterceptor(l Logger) grpc.StreamServerInterceptor {
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-		requestID := requestIDFromGRPCContext(ss.Context())
-		logger := l.Fields("request_id", requestID)
+		correlationID := correlationIDFromGRPCContext(ss.Context())
+		logger := l.Fields("correlation_id", correlationID)
 		newCtx := NewContext(ss.Context(), logger)
 		wrapped := grpc_middleware.WrapServerStream(ss)
 		wrapped.WrappedContext = newCtx
@@ -31,19 +31,22 @@ func StreamInterceptor(l Logger) grpc.StreamServerInterceptor {
 // For REST API, use Grpc-Metadata-Request-Id as header key for passing a request id.
 func UnaryInterceptor(l Logger) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
-		requestID := requestIDFromGRPCContext(ctx)
-		logger := l.Fields("request_id", requestID)
+		correlationID := correlationIDFromGRPCContext(ctx)
+		logger := l.Fields("correlation_id", correlationID)
 		newCtx := NewContext(ctx, logger)
 		return handler(newCtx, req)
 	}
 }
 
-// try to get from meta data first.
+// try to get from meta data from X-Correlation-ID then X-Request-ID.
 // otherwise generate a new one.
-func requestIDFromGRPCContext(ctx context.Context) string {
+func correlationIDFromGRPCContext(ctx context.Context) string {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if ok {
-		if v, ok := md["request-id"]; ok {
+		if v, ok := md["x-correlation-id"]; ok {
+			return v[0]
+		}
+		if v, ok := md["x-request-id"]; ok {
 			return v[0]
 		}
 	}

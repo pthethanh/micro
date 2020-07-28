@@ -368,9 +368,9 @@ func PProf(pathPrefix string) Option {
 }
 
 // DefaultHeaderMatcher is an ServerMuxOption that forward
-// header keys request-id, api-key to gRPC Context.
+// header keys X-Request-Id, X-Correlation-ID, Api-Key to gRPC Context.
 func DefaultHeaderMatcher() runtime.ServeMuxOption {
-	return HeaderMatcher([]string{"Request-Id", "Api-Key"})
+	return HeaderMatcher([]string{"X-Request-Id", "X-Correlation-ID", "Api-Key"})
 }
 
 // HeaderMatcher is an ServeMuxOption for matcher header

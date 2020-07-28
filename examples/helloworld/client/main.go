@@ -12,6 +12,7 @@ import (
 
 	pb "github.com/pthethanh/micro/examples/helloworld/helloworld"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 )
 
 func main() {
@@ -29,7 +30,8 @@ func main() {
 		log.Fatal(err)
 	}
 	grpcClient := pb.NewGreeterClient(conn)
-	rep, err := grpcClient.SayHello(context.Background(), &pb.HelloRequest{
+	ctx := metadata.AppendToOutgoingContext(context.Background(), "X-correlation-Id", "xxxxxxxxxxxxxxxxxxxxxx")
+	rep, err := grpcClient.SayHello(ctx, &pb.HelloRequest{
 		Name: "Jack",
 	})
 	if err != nil {
@@ -43,6 +45,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	req.Header.Set("X-correlation-Id", "123489")
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		log.Fatal(err)
