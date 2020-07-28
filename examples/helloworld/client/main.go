@@ -29,6 +29,8 @@ func main() {
 		log.Fatal(err)
 	}
 	grpcClient := pb.NewGreeterClient(conn)
+	// Set correlation id for tracing in the logs.
+	//ctx := metadata.AppendToOutgoingContext(context.Background(), "X-Correlation-Id", "123-456-789-000")
 	rep, err := grpcClient.SayHello(context.Background(), &pb.HelloRequest{
 		Name: "Jack",
 	})
@@ -43,6 +45,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	// Set correlation id for tracing in the logs.
+	// req.Header.Set("X-Correlation-Id", "123-456-789-001")
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		log.Fatal(err)
