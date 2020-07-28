@@ -76,8 +76,9 @@ type (
 )
 
 const (
-	loggerKey  contextKey = contextKey("logger_key")
-	filePrefix            = "file://"
+	loggerKey        contextKey = contextKey("logger_key")
+	filePrefix                  = "file://"
+	correlationIDKey string     = "correlation_id"
 )
 
 // These are the different logging levels.
