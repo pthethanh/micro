@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/pthethanh/micro/auth"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -37,9 +38,7 @@ func TestAuthenticator(t *testing.T) {
 	secret := []byte("very-secret-secret")
 	fn := Authenticator(secret)
 	claims := Claims{
-		Scope:    "foo bar foobar",
-		UserID:   "my username",
-		ClientID: "clientID",
+		Scope: "foo bar foobar",
 	}
 	token, err := Encode(claims, secret)
 	if err != nil {
@@ -70,10 +69,10 @@ func TestParseFromMetadata(t *testing.T) {
 		meta metadata.MD
 		err  error
 	}{
-		{nil, errMetadataMissing},
-		{metadata.Pairs("key", "value"), errAuthorizationMissing},
-		{metadata.Pairs("authorization", "key", "authorization", "newkey"), errMultipleAuthFound},
-		{metadata.Pairs("authorization", "token"), errInvalidToken},
+		{nil, auth.ErrMetadataMissing},
+		{metadata.Pairs("key", "value"), auth.ErrAuthorizationMissing},
+		{metadata.Pairs("authorization", "key", "authorization", "newkey"), auth.ErrMultipleAuthFound},
+		{metadata.Pairs("authorization", "token"), auth.ErrInvalidToken},
 		{metadata.Pairs("authorization", token), nil},
 	}
 	for _, tc := range tt {

@@ -3,7 +3,6 @@ package jwt
 
 import (
 	"context"
-	"errors"
 	"strings"
 
 	"github.com/pthethanh/micro/auth"
@@ -12,31 +11,21 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-var (
-	// errors
-	errMetadataMissing      = errors.New("jwt: could not locate request metadata")
-	errAuthorizationMissing = errors.New("jwt: could not locate authorization metadata")
-	errMultipleAuthFound    = errors.New("jwt: too many authorization entries")
-	errInvalidToken         = errors.New("jwt: invalid token")
-
-	// Lookup key for authorization metadata
-	authorizationMd = "authorization"
-)
+// StandardClaims alias of jwt-go jwt.StandardClaims
+type StandardClaims = jwt.StandardClaims
 
 // Claims represents the claims provided by the JWT.
 type Claims struct {
-	Scope     string `json:"scope,omitempty"`
-	UserID    string `json:"user_id,omitempty"`
-	ClientID  string `json:"client_id,omitempty"`
-	TokenType string `json:"token_type,omitempty"`
-	AvatarURL string `json:"avatar_url"`
-	FullName  string `json:"full_name"`
+	StandardClaims
 
+	Scope string `json:"scope,omitempty"`
 	// Once we have service-accounts in place, this should be removed.
 	// Its up to each service to decide how they would like to handle
 	// admin-callers.
 	Admin bool `json:"admin,omitempty"`
-	jwt.StandardClaims
+
+	// Metadata is a map for client to inject additional information whenever needed.
+	Metadata map[string]interface{}
 }
 
 // ContainScopes checks if `scopes` are present within the Claim.Scope.
@@ -79,14 +68,14 @@ func Authenticator(secret []byte) auth.AuthenticatorFunc {
 func ParseFromMetadata(ctx context.Context, secret []byte, c jwt.Claims) error {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
-		return errMetadataMissing
+		return auth.ErrMetadataMissing
 	}
-	slice, ok := md[authorizationMd]
+	slice, ok := md[auth.AuthorizationMD]
 	if !ok || len(slice) == 0 {
-		return errAuthorizationMissing
+		return auth.ErrAuthorizationMissing
 	}
 	if len(slice) > 1 {
-		return errMultipleAuthFound
+		return auth.ErrMultipleAuthFound
 	}
 	return Parse(slice[0], secret, c)
 }
@@ -95,12 +84,12 @@ func ParseFromMetadata(ctx context.Context, secret []byte, c jwt.Claims) error {
 func Parse(t string, s []byte, c jwt.Claims) error {
 	_, err := jwt.ParseWithClaims(t, c, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, errInvalidToken
+			return nil, auth.ErrInvalidToken
 		}
 		return s, nil
 	})
 	if err != nil {
-		return errInvalidToken
+		return auth.ErrInvalidToken
 	}
 	return c.Valid()
 }
@@ -119,7 +108,7 @@ func NewContext(ctx context.Context, claims Claims) context.Context {
 	return context.WithValue(ctx, claimsKey{}, claims)
 }
 
-// FromContext fetches the claims attched to the ctx.
+// FromContext fetches the claims attached to the ctx.
 func FromContext(ctx context.Context) (c Claims, ok bool) {
 	c, ok = ctx.Value(claimsKey{}).(Claims)
 	return
@@ -140,7 +129,7 @@ func TokenString(ctx context.Context) string {
 	if !ok {
 		return ""
 	}
-	slice, ok := md[authorizationMd]
+	slice, ok := md[auth.AuthorizationMD]
 	if !ok || len(slice) == 0 {
 		return ""
 	}

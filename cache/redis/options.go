@@ -9,6 +9,7 @@ import (
 )
 
 type (
+	// Config holds Redis cache configuration.
 	Config struct {
 		Addrs []string `envconfig:"REDIS_ADDRS"`
 
@@ -46,6 +47,7 @@ type (
 		MasterName string `envconfig:"REDIS_MASTER_NAME"`
 	}
 
+	// Option is Redis configuration option.
 	Option func(*Redis)
 )
 

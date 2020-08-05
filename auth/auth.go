@@ -3,6 +3,11 @@ package auth
 
 import "context"
 
+const (
+	// AuthorizationMD authorization metadata name.
+	AuthorizationMD = "authorization"
+)
+
 // Authenticator defines the interface to perform the actual
 // authentication of the request. Implementations should fetch
 // the required data from the context.Context object. GRPC specific
