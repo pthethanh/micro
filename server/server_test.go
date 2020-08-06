@@ -11,6 +11,7 @@ import (
 	"github.com/pthethanh/micro/log"
 	"github.com/pthethanh/micro/server"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/test/bufconn"
 )
 
 var (
@@ -39,17 +40,12 @@ func TestInitServerDefault(t *testing.T) {
 
 func TestInitServerWithOptions(t *testing.T) {
 	t.Parallel()
-	addr := availableAddress()
-	if addr == "" {
-		log.Warn("address is already in use, ignore unit test")
-		t.SkipNow()
-		return
-	}
+	lis := bufconn.Listen(2000)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 	srv := server.New(
-		server.Address(addr),
+		server.Listener(lis),
 		server.AuthJWT("secret"),
 		server.Logger(log.Root()),
 		server.MetricsPaths("ready", "live", "metrics"),

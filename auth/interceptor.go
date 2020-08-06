@@ -15,10 +15,15 @@ func StreamInterceptor(auth Authenticator) grpc.StreamServerInterceptor {
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 		var newCtx context.Context
 		var err error
+		a := auth
+		// if server overrides Authenticator, use it instead.
 		if srvAuth, ok := srv.(Authenticator); ok {
-			newCtx, err = srvAuth.Authenticate(ss.Context())
+			a = srvAuth
+		}
+		if wl, ok := a.(WhiteListAuthenticator); ok && wl.IsWhiteListed(info.FullMethod) {
+			newCtx, err = ss.Context(), nil
 		} else {
-			newCtx, err = auth.Authenticate(ss.Context())
+			newCtx, err = a.Authenticate(ss.Context())
 		}
 		if err != nil {
 			return err
@@ -33,12 +38,18 @@ func StreamInterceptor(auth Authenticator) grpc.StreamServerInterceptor {
 // an authentication check for each request by using
 // Authenticator.Authenticate(ctx context.Context).
 func UnaryInterceptor(auth Authenticator) grpc.UnaryServerInterceptor {
-	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		var newCtx context.Context
+		var err error
+		a := auth
+		// if server override Authenticator, use it instead.
 		if srvAuth, ok := info.Server.(Authenticator); ok {
-			newCtx, err = srvAuth.Authenticate(ctx)
+			a = srvAuth
+		}
+		if wl, ok := a.(WhiteListAuthenticator); ok && wl.IsWhiteListed(info.FullMethod) {
+			newCtx, err = ctx, nil
 		} else {
-			newCtx, err = auth.Authenticate(ctx)
+			newCtx, err = a.Authenticate(ctx)
 		}
 		if err != nil {
 			return nil, err

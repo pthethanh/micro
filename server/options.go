@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/http"
 	"net/http/pprof"
 	"net/textproto"
@@ -134,6 +135,21 @@ func FromConfig(conf Config) Option {
 func Address(addr string) Option {
 	return func(opts *Server) {
 		opts.address = addr
+		if opts.lis != nil {
+			log.Debugf("server: address is set to %s, Listener will be overridden", addr)
+			opts.lis = nil
+		}
+	}
+}
+
+// Listener is an option allows server to be served on an existing listener.
+func Listener(lis net.Listener) Option {
+	return func(opts *Server) {
+		if opts.address != "" {
+			log.Debugf("server: listener is set to %s, address will be overridden", lis.Addr().String())
+			opts.address = lis.Addr().String()
+		}
+		opts.lis = lis
 	}
 }
 
@@ -164,7 +180,7 @@ func AuthJWT(secret string) Option {
 }
 
 // Auth is an option allows user to add an authenticator to the server.
-func Auth(f auth.AuthenticatorFunc) Option {
+func Auth(f auth.Authenticator) Option {
 	return func(opts *Server) {
 		opts.streamInterceptors = append(opts.streamInterceptors, auth.StreamInterceptor(f))
 		opts.unaryInterceptors = append(opts.unaryInterceptors, auth.UnaryInterceptor(f))

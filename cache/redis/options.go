@@ -39,7 +39,7 @@ type (
 
 		MaxRedirects   int  `envconfig:"REDIS_MAX_REDIRECTS"`
 		ReadOnly       bool `envconfig:"REDIS_READ_ONLY"`
-		RouteByLatency bool `envconfig:"REDIS_ROUTE_BY_LATECENCY"`
+		RouteByLatency bool `envconfig:"REDIS_ROUTE_BY_LATENCY"`
 		RouteRandomly  bool `envconfig:"REDIS_ROUTE_RANDOMLY"`
 
 		// The sentinel master name.

@@ -28,6 +28,7 @@ import (
 type (
 	// Server holds the configuration options for the server instance.
 	Server struct {
+		lis         net.Listener
 		address     string
 		tlsCertFile string
 		tlsKeyFile  string
@@ -114,9 +115,12 @@ func (server *Server) ListenAndServe(services ...Service) error {
 // The server starts with default metrics and health endpoints.
 // If the context is canceled or times out, the GRPC server will attempt a graceful shutdown.
 func (server *Server) ListenAndServeContext(ctx context.Context, services ...Service) error {
-	lis, err := net.Listen("tcp", server.address)
-	if err != nil {
-		return err
+	if server.lis == nil {
+		lis, err := net.Listen("tcp", server.address)
+		if err != nil {
+			return err
+		}
+		server.lis = lis
 	}
 	server.streamInterceptors = append(server.streamInterceptors, grpc_prometheus.StreamServerInterceptor)
 	server.unaryInterceptors = append(server.unaryInterceptors, grpc_prometheus.UnaryServerInterceptor)
@@ -190,10 +194,10 @@ func (server *Server) ListenAndServeContext(ctx context.Context, services ...Ser
 
 	go func() {
 		if isSecured {
-			errChan <- httpServer.ServeTLS(lis, server.tlsCertFile, server.tlsKeyFile)
+			errChan <- httpServer.ServeTLS(server.lis, server.tlsCertFile, server.tlsKeyFile)
 			return
 		}
-		errChan <- httpServer.Serve(lis)
+		errChan <- httpServer.Serve(server.lis)
 	}()
 
 	// tell everyone we're ready
