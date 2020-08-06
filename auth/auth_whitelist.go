@@ -70,7 +70,7 @@ func WhiteListMatchFuncRegexp(m string, p string) bool {
 	return false
 }
 
-// WhiteListMatchFuncExact is a simple white list match func using string comparision.
+// WhiteListMatchFuncExact is a simple white list match func using string comparison.
 func WhiteListMatchFuncExact(m string, p string) bool {
 	return p == m
 }
