@@ -83,8 +83,9 @@ type (
 	}
 
 	route struct {
-		p string
-		h http.Handler
+		p     string
+		h     http.Handler
+		proto []string
 	}
 )
 
@@ -169,11 +170,33 @@ func (server *Server) ListenAndServeContext(ctx context.Context, services ...Ser
 	grpc_prometheus.Register(grpcServer)
 
 	// Attach HTTP handlers
-	mux.Handle(server.getReadinessPath(), health.Readiness())
-	mux.Handle(server.getLivenessPath(), health.Liveness(server.healthChecks...))
-	mux.Handle(server.getMetricsPath(), promhttp.Handler())
-	mux.Handle(server.getAPIPrefix(), gw)
+
+	server.routes = append([]route{
+		{
+			p: server.getReadinessPath(),
+			h: health.Readiness(),
+		},
+		{
+			p: server.getLivenessPath(),
+			h: health.Liveness(server.healthChecks...),
+		},
+		{
+			p: server.getMetricsPath(),
+			h: promhttp.Handler(),
+		},
+		{
+			p:     server.getAPIPrefix(),
+			h:     gw,
+			proto: []string{"HTTP", "gRPC"},
+		},
+	}, server.routes...)
+
 	for _, r := range server.routes {
+		proto := strings.Join(r.proto, "+")
+		if len(proto) == 0 {
+			proto = "HTTP"
+		}
+		log.Context(ctx).Infof("registered handler, path: %s, proto: %s", r.p, proto)
 		mux.Handle(r.p, r.h)
 	}
 
