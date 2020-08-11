@@ -20,7 +20,6 @@ import (
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
@@ -36,7 +35,6 @@ type (
 		// Paths
 		livenessPath  string
 		readinessPath string
-		metricsPath   string
 
 		// HTTP
 		readTimeout      time.Duration
@@ -54,7 +52,8 @@ type (
 		streamInterceptors []grpc.StreamServerInterceptor
 		unaryInterceptors  []grpc.UnaryServerInterceptor
 
-		log log.Logger
+		log           log.Logger
+		enableMetrics bool
 	}
 
 	// Option is a configuration option.
@@ -167,10 +166,10 @@ func (server *Server) ListenAndServeContext(ctx context.Context, services ...Ser
 		}
 	}
 	// Make sure Prometheus metrics are initialized.
-	grpc_prometheus.Register(grpcServer)
-
-	// Attach HTTP handlers
-
+	if server.enableMetrics {
+		grpc_prometheus.Register(grpcServer)
+	}
+	// Attach handlers by order: internal, HTTP handlers, gRPC.
 	server.routes = append([]route{
 		{
 			p: server.getReadinessPath(),
@@ -180,16 +179,12 @@ func (server *Server) ListenAndServeContext(ctx context.Context, services ...Ser
 			p: server.getLivenessPath(),
 			h: health.Liveness(server.healthChecks...),
 		},
-		{
-			p: server.getMetricsPath(),
-			h: promhttp.Handler(),
-		},
-		{
-			p:     server.getAPIPrefix(),
-			h:     gw,
-			proto: []string{"HTTP", "gRPC"},
-		},
 	}, server.routes...)
+	server.routes = append(server.routes, route{
+		p:     server.getAPIPrefix(),
+		h:     gw,
+		proto: []string{"HTTP", "gRPC"},
+	})
 
 	for _, r := range server.routes {
 		proto := strings.Join(r.proto, "+")
@@ -280,13 +275,6 @@ func (server Server) getLivenessPath() string {
 		return "/internal/liveness"
 	}
 	return server.livenessPath
-}
-
-func (server Server) getMetricsPath() string {
-	if server.metricsPath == "" {
-		return "/internal/metrics"
-	}
-	return server.metricsPath
 }
 
 // With allows user to add more options to the server after created.

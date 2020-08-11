@@ -24,7 +24,8 @@ type (
 	// - auth.WhiteListMatchFuncExact
 	WhiteListMatchFunc = func(fullMethod, whiteListPattern string) bool
 
-	whitelistAuthenticator struct {
+	// SimpleWhiteListAuthenticator is simple implementation of WhiteListAuthenticator.
+	SimpleWhiteListAuthenticator struct {
 		auth    Authenticator
 		wl      []string
 		matches []WhiteListMatchFunc
@@ -33,12 +34,12 @@ type (
 
 // NewWhiteListAuthenticator return a new WhiteListAuthenticator.
 // If no matchFuncs is provided, default match func (exact match) will be used.
-func NewWhiteListAuthenticator(auth Authenticator, whitelist []string, matchFuncs ...WhiteListMatchFunc) WhiteListAuthenticator {
+func NewWhiteListAuthenticator(auth Authenticator, whitelist []string, matchFuncs ...WhiteListMatchFunc) SimpleWhiteListAuthenticator {
 	funcs := matchFuncs
 	if len(funcs) == 0 {
 		funcs = []WhiteListMatchFunc{WhiteListMatchFuncExact}
 	}
-	return &whitelistAuthenticator{
+	return SimpleWhiteListAuthenticator{
 		auth:    auth,
 		wl:      whitelist,
 		matches: funcs,
@@ -46,12 +47,12 @@ func NewWhiteListAuthenticator(auth Authenticator, whitelist []string, matchFunc
 }
 
 // Authenticate implements the Authenticator interface.
-func (a *whitelistAuthenticator) Authenticate(ctx context.Context) (context.Context, error) {
+func (a SimpleWhiteListAuthenticator) Authenticate(ctx context.Context) (context.Context, error) {
 	return a.auth.Authenticate(ctx)
 }
 
 // IsWhiteListed implements WhitelistAuthenticator interface.
-func (a *whitelistAuthenticator) IsWhiteListed(fullMethod string) bool {
+func (a SimpleWhiteListAuthenticator) IsWhiteListed(fullMethod string) bool {
 	for _, p := range a.wl {
 		for _, f := range a.matches {
 			if f(fullMethod, p) {

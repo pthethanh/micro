@@ -12,6 +12,7 @@ import (
 
 	"github.com/gorilla/handlers"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/pthethanh/micro/auth"
 	"github.com/pthethanh/micro/auth/jwt"
 	"github.com/pthethanh/micro/config"
@@ -47,8 +48,6 @@ type (
 		LivenessPath string `envconfig:"LIVENESS_PATH" default:"/internal/liveness"`
 		// ReadinessPath is API path for the readiness API.
 		ReadinessPath string `envconfig:"READINESS_PATH" default:"/internal/readiness"`
-		// MetricsPath is API path for Prometheus metrics.
-		MetricsPath string `envconfig:"METRICS_PATH" default:"/internal/metrics"`
 
 		// ReadTimeout is read timeout of both gRPC and HTTP server.
 		ReadTimeout time.Duration `envconfig:"READ_TIMEOUT" default:"30s"`
@@ -79,6 +78,11 @@ type (
 		// PProf options
 		PProf       bool   `envconfig:"PPROF" default:"false"`
 		PProfPrefix string `envconfig:"PPROF_PREFIX"`
+
+		// Metrics enable/disable standard metrics
+		Metrics bool `envconfig:"METRICS" default:"true"`
+		// MetricsPath is API path for Prometheus metrics.
+		MetricsPath string `envconfig:"METRICS_PATH" default:"/internal/metrics"`
 	}
 )
 
@@ -98,12 +102,15 @@ func FromConfig(conf Config) Option {
 	return func(server *Server) {
 		opts := []Option{
 			Address(conf.Address),
-			MetricsPaths(conf.ReadinessPath, conf.LivenessPath, conf.MetricsPath),
+			HealthCheckPaths(conf.ReadinessPath, conf.LivenessPath),
 			TLS(conf.TLSKeyFile, conf.TLSCertFile),
 			Timeout(conf.ReadTimeout, conf.WriteTimeout),
 			AuthJWT(conf.JWTSecret),
 			APIPrefix(conf.APIPrefix),
 			CORS(conf.CORSAllowedCredential, conf.CORSAllowedHeaders, conf.CORSAllowedMethods, conf.CORSAllowedOrigins),
+		}
+		if conf.Metrics {
+			opts = append(opts, Metrics(conf.MetricsPath))
 		}
 		if conf.WebDir != "" {
 			opts = append(opts, Web(conf.WebPrefix, conf.WebDir, conf.WebIndex))
@@ -213,12 +220,11 @@ func TLS(key, cert string) Option {
 	}
 }
 
-// MetricsPaths is an option allows user to override readiness, liveness and metrics path.
-func MetricsPaths(ready, live, metrics string) Option {
+// HealthCheckPaths is an option allows user to override readiness, liveness paths.
+func HealthCheckPaths(ready, live string) Option {
 	return func(opts *Server) {
 		opts.readinessPath = ready
 		opts.livenessPath = live
-		opts.metricsPath = metrics
 	}
 }
 
@@ -379,6 +385,17 @@ func PProf(pathPrefix string) Option {
 		opts.routes = append(opts.routes, route{
 			p: pathPrefix + "/debug/pprof/trace",
 			h: http.HandlerFunc(pprof.Trace),
+		})
+	}
+}
+
+// Metrics is an option to register standard Prometheus metrics for HTTP.
+func Metrics(path string) Option {
+	return func(opts *Server) {
+		opts.enableMetrics = true
+		opts.routes = append(opts.routes, route{
+			p: path,
+			h: promhttp.Handler(),
 		})
 	}
 }

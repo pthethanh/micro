@@ -48,7 +48,7 @@ func TestInitServerWithOptions(t *testing.T) {
 		server.Listener(lis),
 		server.AuthJWT("secret"),
 		server.Logger(log.Root()),
-		server.MetricsPaths("ready", "live", "metrics"),
+		server.HealthCheckPaths("/ready", "/live"),
 		server.ServeMuxOptions(server.DefaultHeaderMatcher()),
 		server.Options(grpc.ConnectionTimeout(20*time.Second)),
 		server.Timeout(20*time.Second, 20*time.Second),
