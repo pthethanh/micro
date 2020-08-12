@@ -20,6 +20,38 @@ I expect micro requires no more than 15 minutes for a beginner/intermediate deve
 
 micro is now in the experiment stage and currently built around gRPC. It exposes both gRPC and REST API over 1 single port using [grpc-gateway](https://github.com/grpc-ecosystem/grpc-gateway).
 
+## Getting Started
+
+### Start your own
+
+```go
+package main
+
+import (
+    "github.com/pthethanh/micro/server"
+)
+
+func main() {
+    if err := server.ListenAndServe(); err != nil {
+        panic(err)
+    }
+}
+```
+
+### Production template using microgen
+
+microgen is a deadly simple production ready project template generator for micro. You can use microgen to generate a project template that has Makefile, Protobuf installation, Docker, Docker compose, sample proto definition,...
+
+```shell
+// Install microgen
+go install github.com/pthethanh/microgen
+
+// Generate project template
+microgen -name usersrv -module github.com/pthethanh/usersrv -heroku_app_name usersrv
+
+// Find your code at $GOPATH/src/github.com/pthethanh/usersrv
+```
+
 ## Features
 
 Currently, micro supports following features:
