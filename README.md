@@ -5,24 +5,28 @@
 
 Just a simple tool kit for building microservices.
 
-**Note**: Please notice that this is just in experiment stage right now and API can be changed without notification, hence please don't use this for production.
+**Note**: Please notice that micro is currently in experiment stage and API can be changed without notification, hence please don't use this for production. After a stable version of micro is announced, backward compatibility will be supported.
 
 ## What is micro?
+
 micro is a Go tool kit for enterprise targeted for microservices or well designed monolith application. It doesn't aim to be a framework, but just a standard libraries for easily and quickly build API applications.
 
-micro's vision is to be come a good tool kit for beginner/intermediate developers and hence it should be: 
+micro's vision is to be come a good tool kit for beginner/intermediate developers and hence it should be:
 
 - Easy to use.
 - Compatible with Go, gRPC native libraries.
 - Come with default ready to use features.
+- Backward compatible.
 
 I expect micro requires no more than 15 minutes for a beginner/intermediate developer to be able to use the tool kit effectively. This means micro will come with lots of useful default features, but at the same time provide developers ability to provide their alternatives.
 
-micro is now in the experiment stage and currently built around gRPC. It exposes both gRPC and REST API over 1 single port using [grpc-gateway](https://github.com/grpc-ecosystem/grpc-gateway).
+micro is built around gRPC. It exposes both gRPC and REST API over 1 single port using [grpc-gateway](https://github.com/grpc-ecosystem/grpc-gateway), with default ready to use logger, metrics, health check APIs.
 
 ## Getting Started
 
 ### Start your own
+
+Start a simple server, get configurations from environment variables.
 
 ```go
 package main
@@ -32,15 +36,57 @@ import (
 )
 
 func main() {
-    if err := server.ListenAndServe(); err != nil {
+    if err := server.ListenAndServe( /*services...*/ ); err != nil {
         panic(err)
     }
 }
 ```
 
+More complex with custom options.
+
+```go
+package main
+
+import (
+    "github.com/pthethanh/micro/log"
+    "github.com/pthethanh/micro/server"
+)
+
+func main() {
+    srv := server.New(
+        server.FromEnv(),
+        server.PProf(""),
+        server.Address(":8088"),
+        server.AuthJWT("secret"),
+        server.APIPrefix("/api/"),
+        server.Web("/", "web", "index.html"),
+        server.Logger(log.Fields("service", "my_service")),
+        server.CORS(true, []string{"*"}, []string{"POST"}, []string{"http://localhost:8080"}),
+    )
+    if err := srv.ListenAndServe( /*services...*/ ); err != nil {
+        panic(err)
+    }
+}
+
+```
+
+See [doc](https://pkg.go.dev/github.com/pthethanh/micro/server?tab=doc) for more options.
+
 ### Production template using microgen
 
-microgen is a deadly simple production ready project template generator for micro. You can use microgen to generate a project template that has Makefile, Protobuf installation, Docker, Docker compose, sample proto definition,...
+microgen is a deadly simple production ready project template generator for micro. You can use microgen to generate a project template that has:
+
+- Makefile with targets for:
+  - Build, format, test,...
+  - Protobuf installation.
+  - Generate code from proto definition for gRPC, gRPC Gateway, Swagger.
+  - Build & Run Docker, Docker Compose.
+  - Heroku deployment.
+- Standard REAME for production.
+- Sample proto definition & structure.
+- Github workflows.
+- Docker, Docker Compose.
+- Option for static web, Single Page Application.
 
 ```shell
 // Install microgen
@@ -67,6 +113,8 @@ Currently, micro supports following features:
 - Authentication interceptors
 - Other options: CORS, HTTP Handler, Serving Single Page Application, Interceptors,...
 
+See [doc](https://pkg.go.dev/github.com/pthethanh/micro/server?tab=doc) and [examples](https://pkg.go.dev/github.com/pthethanh/micro/server?tab=doc#pkg-examples) for more detail.
+
 ### Auth
 
 - Authenticator interface.
@@ -74,11 +122,15 @@ Currently, micro supports following features:
 - Authenticator, WhiteList, Chains.
 - Interceptors for both gRPC & HTTP
 
+See [doc](https://pkg.go.dev/github.com/pthethanh/micro/auth?tab=doc) for  more detail.
+
 ### Broker
 
 - Broker interface.
 - Memory broker.
 - NATS broker.
+
+See [doc](https://pkg.go.dev/github.com/pthethanh/micro/broker?tab=doc) for  more detail.
 
 ### Cache
 
@@ -86,16 +138,22 @@ Currently, micro supports following features:
 - Memory cache.
 - Redis cache.
 
+See [doc](https://pkg.go.dev/github.com/pthethanh/micro/cache?tab=doc) for  more detail.
+
 ### Config
 
 - Config interface.
 - Config from environment.
 - Config from file and other options.
 
+See [doc](https://pkg.go.dev/github.com/pthethanh/micro/config?tab=doc) for  more detail.
+
 ### Health
 
 - Health check for readiness and liveness.
 - Utilities functions for checking health.
+
+See [doc](https://pkg.go.dev/github.com/pthethanh/micro/health?tab=doc) for  more detail.
 
 ### Log
 
@@ -104,9 +162,21 @@ Currently, micro supports following features:
 - Context logger & tracing using X-Request-Id and X-Correlation-Id
 - Interceptor for HTTP & gRPC.
 
+See [doc](https://pkg.go.dev/github.com/pthethanh/micro/log?tab=doc) for  more detail.
+
 ### Util
 
-- Some utilities that might need during the development using micro. 
+- Some utilities that might need during the development using micro.
+
+See [doc](https://pkg.go.dev/github.com/pthethanh/micro/util?tab=doc) for  more detail.
+
+### Interceptors and Other Options
+
+micro is completely compatible with Go native and gRPC native, hence you can use external interceptors and other external libraries along with the provided options.
+
+Interceptors: [go-grpc-middleware](https://github.com/grpc-ecosystem/go-grpc-middleware)
+
+See [examples](https://pkg.go.dev/github.com/pthethanh/micro/server?tab=doc#example_New_withExternalInterceptors) for more detail.
 
 ## Why a new standard libraries?
 

@@ -6,6 +6,12 @@ import (
 
 	"github.com/pthethanh/micro/log"
 	"github.com/pthethanh/micro/server"
+
+	grpc_opentracing "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
+
+	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
+	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
+	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 )
 
 func ExampleListenAndServe() {
@@ -61,6 +67,27 @@ func ExampleNew_withInternalHTTPAPI() {
 	srv := server.New(
 		server.FromEnv(),
 		server.HTTPHandler("/doc", h),
+	)
+	if err := srv.ListenAndServe( /*services ...Service*/ ); err != nil {
+		panic(err)
+	}
+}
+
+func ExampleNew_withExternalInterceptors() {
+	srv := server.New(
+		server.FromEnv(),
+		server.StreamInterceptors(
+			grpc_ctxtags.StreamServerInterceptor(),
+			grpc_opentracing.StreamServerInterceptor(),
+			grpc_prometheus.StreamServerInterceptor,
+			grpc_recovery.StreamServerInterceptor(),
+		),
+		server.UnaryInterceptors(
+			grpc_ctxtags.UnaryServerInterceptor(),
+			grpc_opentracing.UnaryServerInterceptor(),
+			grpc_prometheus.UnaryServerInterceptor,
+			grpc_recovery.UnaryServerInterceptor(),
+		),
 	)
 	if err := srv.ListenAndServe( /*services ...Service*/ ); err != nil {
 		panic(err)
