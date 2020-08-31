@@ -38,7 +38,7 @@ func ExampleNew_fromEnvironmentVariables() {
 func ExampleNew_withOptions() {
 	srv := server.New(
 		server.Address(":8080"),
-		server.AuthJWT("secret"),
+		server.JWT("secret"),
 		server.Logger(log.Fields("service", "micro")),
 	)
 	if err := srv.ListenAndServe( /*services ...Service*/ ); err != nil {

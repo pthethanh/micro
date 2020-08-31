@@ -105,7 +105,7 @@ func FromConfig(conf Config) Option {
 			HealthCheckPaths(conf.ReadinessPath, conf.LivenessPath),
 			TLS(conf.TLSKeyFile, conf.TLSCertFile),
 			Timeout(conf.ReadTimeout, conf.WriteTimeout),
-			AuthJWT(conf.JWTSecret),
+			JWT(conf.JWTSecret),
 			APIPrefix(conf.APIPrefix),
 			CORS(conf.CORSAllowedCredential, conf.CORSAllowedHeaders, conf.CORSAllowedMethods, conf.CORSAllowedOrigins),
 		}
@@ -174,8 +174,8 @@ func UnaryInterceptors(interceptors ...grpc.UnaryServerInterceptor) Option {
 	}
 }
 
-// AuthJWT is an option allows user to add jwt authenticator to the server.
-func AuthJWT(secret string) Option {
+// JWT is an option allows user to add jwt authenticator to the server.
+func JWT(secret string) Option {
 	return func(opts *Server) {
 		if secret == "" {
 			return
