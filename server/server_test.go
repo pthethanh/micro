@@ -46,7 +46,7 @@ func TestInitServerWithOptions(t *testing.T) {
 	defer cancel()
 	srv := server.New(
 		server.Listener(lis),
-		server.AuthJWT("secret"),
+		server.JWT("secret"),
 		server.Logger(log.Root()),
 		server.HealthCheckPaths("/ready", "/live"),
 		server.ServeMuxOptions(server.DefaultHeaderMatcher()),

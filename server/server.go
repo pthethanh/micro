@@ -180,12 +180,14 @@ func (server *Server) ListenAndServeContext(ctx context.Context, services ...Ser
 			h: health.Liveness(server.healthChecks...),
 		},
 	}, server.routes...)
-	server.routes = append(server.routes, route{
-		p:     server.getAPIPrefix(),
-		h:     gw,
-		proto: []string{"HTTP", "gRPC"},
-	})
-
+	// Serve gRPC and GW only if there is a service registered.
+	if len(services) > 0 {
+		server.routes = append(server.routes, route{
+			p:     server.getAPIPrefix(),
+			h:     gw,
+			proto: []string{"HTTP", "gRPC"},
+		})
+	}
 	for _, r := range server.routes {
 		proto := strings.Join(r.proto, "+")
 		if len(proto) == 0 {
