@@ -5,11 +5,9 @@
 
 Just a simple tool kit for building microservices.
 
-**Note**: Please notice that micro is currently in experiment stage and API can be changed without notification, hence please don't use this for production. After a stable version of micro is announced, backward compatibility will be supported.
-
 ## What is micro?
 
-micro is a Go tool kit for enterprise targeted for microservices or well designed monolith application. It doesn't aim to be a framework, but just a standard libraries for easily and quickly build API applications.
+micro is a Go tool kit for enterprise targeted for microservices or well designed monolith application. It doesn't aim to be a framework, but just a microservices standard library for easily and quickly build API applications.
 
 micro's vision is to be come a good tool kit for beginner/intermediate developers and hence it should be:
 
@@ -74,7 +72,7 @@ See [doc](https://pkg.go.dev/github.com/pthethanh/micro/server?tab=doc) for more
 
 ### Production template using microgen
 
-microgen is a deadly simple production ready project template generator for micro. You can use microgen to generate a project template that has:
+[microgen](github.com/pthethanh/microgen) is a deadly simple production ready project template generator for micro. You can use microgen to generate a project template that has:
 
 - Makefile with targets for:
   - Build, format, test,...
