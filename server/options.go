@@ -425,7 +425,7 @@ func HeaderMatcher(keys []string) runtime.ServeMuxOption {
 // a general error to the caller.
 func recoveryHandler(l log.Logger) func(context.Context, interface{}) error {
 	return func(ctx context.Context, p interface{}) error {
-		l.Context(ctx).Errorf("panic: %v", p)
+		l.Context(ctx).Errorf("server: panic recovered, err: %v", p)
 		return status.Errorf(codes.Internal, codes.Internal.String())
 	}
 }

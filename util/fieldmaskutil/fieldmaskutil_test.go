@@ -127,3 +127,58 @@ func TestTrimPrefix(t *testing.T) {
 		t.Errorf("got field=%s, want field with snake_case=%s", paths[1], "next_meta.values")
 	}
 }
+
+func TestRemoveFields(t *testing.T) {
+	v := struct {
+		Name     string `json:"name"`
+		Password string `json:"password"`
+		Age      int    `json:"age"`
+	}{
+		Name:     "Jack",
+		Password: "123",
+		Age:      22,
+	}
+	paths := fieldmaskutil.GetValidFields([]string{
+		"name",
+		"password",
+	}, v, fieldmaskutil.RemoveFields("password", "age"))
+	want := 1
+	if len(paths) != want {
+		t.Errorf("got len(paths)=%d, want len(paths)=%d", len(paths), want)
+	}
+}
+
+func TestContainsOneOf(t *testing.T) {
+	cases := []struct {
+		name   string
+		in     []string
+		v      []string
+		expect bool
+	}{
+		{
+			name:   "contain",
+			in:     []string{"a", "b", "c"},
+			v:      []string{"b"},
+			expect: true,
+		},
+		{
+			name:   "not contain",
+			in:     []string{"a", "b", "c"},
+			v:      []string{"d"},
+			expect: false,
+		},
+		{
+			name:   "contains",
+			in:     []string{"a", "b", "c"},
+			v:      []string{"e", "b"},
+			expect: true,
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			if ok := fieldmaskutil.ContainOneOf(c.in, c.v...); ok != c.expect {
+				t.Errorf("got result=%v, want result=%v", ok, c.expect)
+			}
+		})
+	}
+}

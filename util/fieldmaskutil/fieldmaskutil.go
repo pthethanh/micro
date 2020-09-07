@@ -32,6 +32,22 @@ func TrimPrefix(prefix string) TransformFunc {
 	}
 }
 
+// RemoveFields is an option to remove a specific fields out of the field mask result.
+// This can be used to remove sensitive fields out of the update.
+func RemoveFields(fields ...string) TransformFunc {
+	set := make(map[string]struct{})
+	for _, f := range fields {
+		set[f] = struct{}{}
+	}
+	return func(s string) string {
+		// if the field is specified, return empty so that it will be ignored in the result.
+		if _, ok := set[s]; ok {
+			return ""
+		}
+		return s
+	}
+}
+
 // GetValidFields return fields match with the value and definition of the given struct.
 // Transformation rules on the result path can be given via transform options.
 func GetValidFields(paths []string, req interface{}, opts ...TransformFunc) []string {
@@ -41,7 +57,9 @@ func GetValidFields(paths []string, req interface{}, opts ...TransformFunc) []st
 			for _, opt := range opts {
 				pth = opt(pth)
 			}
-			npaths = append(npaths, pth)
+			if pth != "" {
+				npaths = append(npaths, pth)
+			}
 		}
 	}
 	return npaths
@@ -82,6 +100,20 @@ func IsValid(path string, req interface{}) (string, bool) {
 		return fmt.Sprintf("%s.%s", npath, nxtPath), true
 	}
 	return npath, ok
+}
+
+// ContainOneOf check if the list contains one of the provided fields.
+func ContainOneOf(list []string, fields ...string) bool {
+	s := make(map[string]struct{})
+	for _, l := range list {
+		s[l] = struct{}{}
+	}
+	for _, f := range fields {
+		if _, ok := s[f]; ok {
+			return true
+		}
+	}
+	return false
 }
 
 // check if the tag name is mentioned in the tags of the given field.

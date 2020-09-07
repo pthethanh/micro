@@ -59,20 +59,20 @@ type (
 	// Option is a configuration option.
 	Option func(*Server)
 
-	// Service implements a registration interface for services to attach
-	// themselves to the grpc.Server.
+	// Service implements a registration interface for services to attach themselves to the grpc.Server.
+	// If the services support gRPC gateway, they must also implement the EndpointService interface.
 	Service interface {
 		Register(srv *grpc.Server)
 	}
 
-	// EndpointService implement an endpoint registration interface for service to attach their endpoint to GRPC gateway
+	// EndpointService implement an endpoint registration interface for service to attach their endpoints to gRPC gateway.
 	EndpointService interface {
 		RegisterWithEndpoint(ctx context.Context, mux *runtime.ServeMux, addr string, opts []grpc.DialOption)
 	}
 
 	// Authenticator defines the interface to perform the actual
 	// authentication of the request. Implementations should fetch
-	// the required data from the context.Context object. GRPC specific
+	// the required data from the context.Context object. gRPC specific
 	// data like `metadata` and `peer` is available on the context.
 	// Should return a new `context.Context` that is a child of `ctx`
 	// or `codes.Unauthenticated` when auth is lacking or
@@ -113,7 +113,7 @@ func (server *Server) ListenAndServe(services ...Service) error {
 // and registers each Service with the grpc.Server. If the Service implements EndpointService
 // its endpoints will be registered to the HTTP Server running on the same port.
 // The server starts with default metrics and health endpoints.
-// If the context is canceled or times out, the GRPC server will attempt a graceful shutdown.
+// If the context is canceled or times out, the gRPC server will attempt a graceful shutdown.
 func (server *Server) ListenAndServeContext(ctx context.Context, services ...Service) error {
 	if server.lis == nil {
 		lis, err := net.Listen("tcp", server.address)
@@ -193,7 +193,7 @@ func (server *Server) ListenAndServeContext(ctx context.Context, services ...Ser
 		if len(proto) == 0 {
 			proto = "HTTP"
 		}
-		log.Context(ctx).Infof("registered handler, path: %s, proto: %s", r.p, proto)
+		log.Context(ctx).Infof("server: registered handler, path: %s, proto: %s", r.p, proto)
 		mux.Handle(r.p, r.h)
 	}
 
@@ -222,7 +222,7 @@ func (server *Server) ListenAndServeContext(ctx context.Context, services ...Ser
 
 	// tell everyone we're ready
 	health.Ready()
-	server.log.Context(ctx).Infof("listening at: %s", server.address)
+	server.log.Context(ctx).Infof("server: listening at: %s", server.address)
 	select {
 	case <-ctx.Done():
 		grpcServer.GracefulStop()
