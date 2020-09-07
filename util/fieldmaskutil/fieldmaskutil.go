@@ -102,8 +102,8 @@ func IsValid(path string, req interface{}) (string, bool) {
 	return npath, ok
 }
 
-// ContainOneOf check if the list contains one of the provided fields.
-func ContainOneOf(list []string, fields ...string) bool {
+// ContainsOneOf check if the list contains one of the provided fields.
+func ContainsOneOf(list []string, fields ...string) bool {
 	s := make(map[string]struct{})
 	for _, l := range list {
 		s[l] = struct{}{}

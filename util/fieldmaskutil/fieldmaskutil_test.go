@@ -176,7 +176,7 @@ func TestContainsOneOf(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			if ok := fieldmaskutil.ContainOneOf(c.in, c.v...); ok != c.expect {
+			if ok := fieldmaskutil.ContainsOneOf(c.in, c.v...); ok != c.expect {
 				t.Errorf("got result=%v, want result=%v", ok, c.expect)
 			}
 		})
