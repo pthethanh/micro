@@ -86,3 +86,86 @@ func TestParseFromMetadata(t *testing.T) {
 		}
 	}
 }
+
+func TestDecodeOnly(t *testing.T) {
+	secret := []byte("very-secret-secret")
+	fn := DecodeOnly(secret)
+	claims := Claims{
+		Scope: "foo bar foobar",
+	}
+	token, err := Encode(claims, secret)
+	if err != nil {
+		t.Fatalf("Encode(%+v, %q) failed with: %v", claims, secret, err)
+	}
+
+	// good token
+	md := metadata.New(map[string]string{"authorization": token})
+	ctx := metadata.NewIncomingContext(context.Background(), md)
+	newCtx, err := fn(ctx)
+	if err != nil {
+		t.Errorf("Decode only should not be failed, but finally failed with: %v", err)
+	}
+	newClaims, ok := FromContext(newCtx)
+	if !ok {
+		t.Error("Claims missing from context")
+	}
+	if !reflect.DeepEqual(claims, newClaims) {
+		t.Errorf("Claims not equal: %v vs %v", claims, newClaims)
+	}
+
+	// bad token
+	md = metadata.New(map[string]string{"authorization": "bad token"})
+	ctx = metadata.NewIncomingContext(context.Background(), md)
+	newCtx, err = fn(ctx)
+	if err != nil {
+		t.Errorf("Decode only should not be failed, but finally failed with: %v", err)
+	}
+	newClaims, ok = FromContext(newCtx)
+	if ok {
+		t.Errorf("got claims=%v, want no claims", newClaims)
+	}
+
+	// no header
+	newCtx, err = fn(context.Background())
+	if err != nil {
+		t.Errorf("Decode only should not be failed, but finally failed with: %v", err)
+	}
+	newClaims, ok = FromContext(newCtx)
+	if ok {
+		t.Errorf("got claims=%v, want no claims", newClaims)
+	}
+}
+
+func TestTokenString(t *testing.T) {
+	give := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJ0ZXN0In0.V9sFBcyxQYUeKTg_rzzjFqtL6b-x4TlDrmlgTTjMtkA"
+	md := metadata.New(map[string]string{"authorization": give})
+	ctx := metadata.NewIncomingContext(context.Background(), md)
+
+	// has header
+	got := TokenString(ctx)
+	if got != give {
+		t.Errorf("got token=%s, want token=%s", got, give)
+	}
+	// no header
+	give = ""
+	got = TokenString(context.Background())
+	if got != give {
+		t.Errorf("got token=%s, want token=%s", got, give)
+	}
+}
+
+func TestSubjectEqual(t *testing.T) {
+	ctx := NewContext(context.Background(), Claims{
+		StandardClaims: StandardClaims{
+			Subject: "subject-1",
+		},
+	})
+	// equal
+	if !SubjectEquals(ctx, "subject-1") {
+		t.Errorf("got equal=false, want equal=true")
+	}
+	// not equal
+	if SubjectEquals(ctx, "subject-2") {
+		t.Errorf("got equal=true, want equal=false")
+	}
+}

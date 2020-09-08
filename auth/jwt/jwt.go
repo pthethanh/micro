@@ -63,6 +63,21 @@ func Authenticator(secret []byte) auth.AuthenticatorFunc {
 	}
 }
 
+// DecodeOnly returns an AuthenticatorFunc that ONLY try to decode JWT token in the
+// authorization header of the metadata and attach the decoded user claims into the context.
+// This authenticator does NOT return error in case the JWT is invalid
+// or there is no authorization header in the metadata.
+func DecodeOnly(secret []byte) auth.AuthenticatorFunc {
+	return func(ctx context.Context) (context.Context, error) {
+		var claims Claims
+		if err := ParseFromMetadata(ctx, secret, &claims); err != nil {
+			return ctx, nil
+		}
+		newCtx := NewContext(ctx, claims)
+		return newCtx, nil
+	}
+}
+
 // ParseFromMetadata fetches the JWT from the :authorization metadata located
 // in the `Context`, validates the JWT and extracts the Claims.
 func ParseFromMetadata(ctx context.Context, secret []byte, c jwt.Claims) error {

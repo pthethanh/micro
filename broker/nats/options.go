@@ -25,6 +25,13 @@ const (
 	defaultAddr = "nats:4222"
 )
 
+// ReadConfigFromEnv read NATS configuration from environment variables.
+func ReadConfigFromEnv(opts ...config.ReadOption) Config {
+	conf := Config{}
+	envconfig.Read(&conf, opts...)
+	return conf
+}
+
 // FromEnv is an option to create new broker base on environment variables.
 func FromEnv(opts ...config.ReadOption) Option {
 	var conf Config

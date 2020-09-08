@@ -51,6 +51,13 @@ type (
 	Option func(*Redis)
 )
 
+// ReadConfigFromEnv read Redis configuration from environment variables.
+func ReadConfigFromEnv(opts ...config.ReadOption) Config {
+	conf := Config{}
+	envconfig.Read(&conf, opts...)
+	return conf
+}
+
 // FromConfig is an option to configure the Redis cache from a custom config.
 func FromConfig(conf Config) Option {
 	return func(r *Redis) {
