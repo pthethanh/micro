@@ -39,6 +39,7 @@ type (
 		// HTTP
 		readTimeout      time.Duration
 		writeTimeout     time.Duration
+		shutdownTimeout  time.Duration
 		routes           []route
 		apiPrefix        string
 		httpInterceptors []func(http.Handler) http.Handler
@@ -225,7 +226,7 @@ func (server *Server) ListenAndServeContext(ctx context.Context, services ...Ser
 	server.log.Context(ctx).Infof("server: listening at: %s", server.address)
 	select {
 	case <-ctx.Done():
-		grpcServer.GracefulStop()
+		gracefulShutdown(httpServer, server.shutdownTimeout)
 		return ctx.Err()
 	case err := <-errChan:
 		return err
@@ -233,10 +234,15 @@ func (server *Server) ListenAndServeContext(ctx context.Context, services ...Ser
 		switch s {
 		case os.Interrupt, syscall.SIGTERM:
 			log.Context(ctx).Info("server: gracefully shutdown...")
-			grpcServer.GracefulStop()
+			gracefulShutdown(httpServer, server.shutdownTimeout)
 		case os.Kill, syscall.SIGKILL:
 			log.Context(ctx).Info("server: kill...")
-			grpcServer.Stop()
+			// It's a kill request, give the server maximum 5s to shutdown.
+			t := 5 * time.Second
+			if t > server.shutdownTimeout && server.shutdownTimeout > 0 {
+				t = server.shutdownTimeout
+			}
+			gracefulShutdown(httpServer, t)
 		}
 		// waiting for srv.Serve to return to errChan.
 	}
@@ -297,4 +303,21 @@ func (server Server) getAPIPrefix() string {
 		return "/"
 	}
 	return server.apiPrefix
+}
+
+// gracefulShutdown shutdown the server gracefully, but with time limit.
+// negative timeout is considered as no timeout.
+//
+// TODO check if we really need to shutdown gRPC since we don't start the server?
+// Check both cases enable/disable TLS since we're handling them differently now.
+func gracefulShutdown(srv *http.Server, t time.Duration) {
+	ctx := context.TODO()
+	if t >= 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(context.Background(), t)
+		defer cancel()
+	}
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Errorf("server: shutdown error: %v", err)
+	}
 }

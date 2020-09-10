@@ -53,6 +53,8 @@ type (
 		ReadTimeout time.Duration `envconfig:"READ_TIMEOUT" default:"30s"`
 		// WriteTimeout is write timeout of both gRPC and HTTP server.
 		WriteTimeout time.Duration `envconfig:"WRITE_TIMEOUT" default:"30s"`
+		//ShutdownTimeout is timeout for shutting down the server.
+		ShutdownTimeout time.Duration `envconfig:"SHUTDOWN_TIMEOUT" default:"30s"`
 		// APIPrefix is path prefix that gRPC API Gateway is routed to.
 		APIPrefix string `envconfig:"API_PREFIX" default:"/api/"`
 
@@ -115,6 +117,7 @@ func FromConfig(conf Config) Option {
 			JWT(conf.JWTSecret),
 			APIPrefix(conf.APIPrefix),
 			CORS(conf.CORSAllowedCredential, conf.CORSAllowedHeaders, conf.CORSAllowedMethods, conf.CORSAllowedOrigins),
+			ShutdownTimeout(conf.ShutdownTimeout),
 		}
 		if conf.Metrics {
 			opts = append(opts, Metrics(conf.MetricsPath))
@@ -404,6 +407,14 @@ func Metrics(path string) Option {
 			p: path,
 			h: promhttp.Handler(),
 		})
+	}
+}
+
+// ShutdownTimeout is an option to override default shutdown timeout of server.
+// Set to -1 for no timeout.
+func ShutdownTimeout(t time.Duration) Option {
+	return func(opts *Server) {
+		opts.shutdownTimeout = t
 	}
 }
 
