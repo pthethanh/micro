@@ -184,23 +184,21 @@ func UnaryInterceptors(interceptors ...grpc.UnaryServerInterceptor) Option {
 	}
 }
 
-// JWT is an option allows user to add jwt authenticator to the server.
+// JWT is an option allows user to use jwt authenticator for authentication.
 func JWT(secret string) Option {
 	return func(opts *Server) {
 		if secret == "" {
 			return
 		}
-		f := jwt.Authenticator([]byte(secret))
-		opts.streamInterceptors = append(opts.streamInterceptors, auth.StreamInterceptor(f))
-		opts.unaryInterceptors = append(opts.unaryInterceptors, auth.UnaryInterceptor(f))
+		opts.auth = jwt.Authenticator([]byte(secret))
 	}
 }
 
-// Auth is an option allows user to add an authenticator to the server.
+// Auth is an option allows user to use an authenticator for authentication.
+// Find more about authenticators in auth package.
 func Auth(f auth.Authenticator) Option {
 	return func(opts *Server) {
-		opts.streamInterceptors = append(opts.streamInterceptors, auth.StreamInterceptor(f))
-		opts.unaryInterceptors = append(opts.unaryInterceptors, auth.UnaryInterceptor(f))
+		opts.auth = f
 	}
 }
 

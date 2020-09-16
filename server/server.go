@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/pthethanh/micro/auth"
 	"github.com/pthethanh/micro/health"
 	"github.com/pthethanh/micro/log"
 	"golang.org/x/net/http2"
@@ -55,6 +56,8 @@ type (
 
 		log           log.Logger
 		enableMetrics bool
+
+		auth auth.Authenticator
 	}
 
 	// Option is a configuration option.
@@ -69,17 +72,6 @@ type (
 	// EndpointService implement an endpoint registration interface for service to attach their endpoints to gRPC gateway.
 	EndpointService interface {
 		RegisterWithEndpoint(ctx context.Context, mux *runtime.ServeMux, addr string, opts []grpc.DialOption)
-	}
-
-	// Authenticator defines the interface to perform the actual
-	// authentication of the request. Implementations should fetch
-	// the required data from the context.Context object. gRPC specific
-	// data like `metadata` and `peer` is available on the context.
-	// Should return a new `context.Context` that is a child of `ctx`
-	// or `codes.Unauthenticated` when auth is lacking or
-	// `codes.PermissionDenied` when lacking permissions.
-	Authenticator interface {
-		Authenticate(ctx context.Context) (context.Context, error)
 	}
 
 	route struct {
@@ -123,10 +115,17 @@ func (server *Server) ListenAndServeContext(ctx context.Context, services ...Ser
 		}
 		server.lis = lis
 	}
-	server.streamInterceptors = append(server.streamInterceptors, grpc_prometheus.StreamServerInterceptor)
-	server.unaryInterceptors = append(server.unaryInterceptors, grpc_prometheus.UnaryServerInterceptor)
+	if server.auth != nil {
+		server.streamInterceptors = append(server.streamInterceptors, auth.StreamInterceptor(server.auth))
+		server.unaryInterceptors = append(server.unaryInterceptors, auth.UnaryInterceptor(server.auth))
+	}
+	if server.enableMetrics {
+		server.streamInterceptors = append(server.streamInterceptors, grpc_prometheus.StreamServerInterceptor)
+		server.unaryInterceptors = append(server.unaryInterceptors, grpc_prometheus.UnaryServerInterceptor)
+	}
 	isSecured := server.tlsCertFile != "" && server.tlsKeyFile != ""
 
+	// server options
 	if len(server.streamInterceptors) > 0 {
 		server.serverOptions = append(server.serverOptions, grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(server.streamInterceptors...)))
 	}
