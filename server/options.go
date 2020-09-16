@@ -21,7 +21,6 @@ import (
 	"github.com/pthethanh/micro/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/status"
 
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
@@ -213,6 +212,9 @@ func Logger(logger log.Logger) Option {
 }
 
 // TLS is an option allows user to add TLS for transport security to the server.
+// Note that host name in ADDRESS must be configured accordingly. Otherwise, you
+// might encounter TLS handshake error.
+// TIP: for local testing, take a look at https://github.com/FiloSottile/mkcert.
 func TLS(key, cert string) Option {
 	return func(opts *Server) {
 		if key == "" || cert == "" {
@@ -220,11 +222,7 @@ func TLS(key, cert string) Option {
 		}
 		opts.tlsKeyFile = key
 		opts.tlsCertFile = cert
-		creds, err := credentials.NewServerTLSFromFile(opts.tlsCertFile, opts.tlsKeyFile)
-		if err != nil {
-			panic(err)
-		}
-		opts.serverOptions = append(opts.serverOptions, grpc.Creds(creds))
+		// server/dial options will be handled in server.go
 	}
 }
 
