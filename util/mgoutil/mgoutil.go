@@ -15,8 +15,8 @@ import (
 type (
 	// Config hold MongoDB common configuration.
 	Config struct {
-		Addrs    []string      `envconfig:"MONGODB_ADDRS" default:"mongodb:27017"`
-		Database string        `envconfig:"MONGODB_DATABASE" default:"goway"`
+		Addrs    []string      `envconfig:"MONGODB_ADDRS" default:"127.0.0.1:27017"`
+		Database string        `envconfig:"MONGODB_DATABASE" default:"micro"`
 		Username string        `envconfig:"MONGODB_USERNAME"`
 		Password string        `envconfig:"MONGODB_PASSWORD"`
 		Timeout  time.Duration `envconfig:"MONGODB_TIMEOUT" default:"10s"`
@@ -34,7 +34,7 @@ func ReadConfigFromEnv(opts ...config.ReadOption) *Config {
 
 // Dial dial to target server with Monotonic mode
 func Dial(conf *Config) (*mgo.Session, error) {
-	log.Infof("dialing to target MongoDB at: %v, database: %v", conf.Addrs, conf.Database)
+	log.Infof("mgo: dialing to target MongoDB at: %v, database: %v", conf.Addrs, conf.Database)
 	ms, err := mgo.DialWithInfo(&mgo.DialInfo{
 		Addrs:    conf.Addrs,
 		Database: conf.Database,
@@ -47,7 +47,7 @@ func Dial(conf *Config) (*mgo.Session, error) {
 	}
 
 	ms.SetMode(conf.Mode, conf.Refresh)
-	log.Infof("successfully dialing to MongoDB at %v", conf.Addrs)
+	log.Infof("mgo: successfully dialing to MongoDB at %v", conf.Addrs)
 	return ms, nil
 }
 

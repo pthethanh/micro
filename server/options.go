@@ -32,7 +32,6 @@ const (
 
 type (
 	// Config is a common configuration of a default server.
-	// Mostly used by lazy guys via FromEnv().
 	Config struct {
 		// Name is name of the service.
 		Name string `envconfig:"NAME" default:"micro"`

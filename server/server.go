@@ -45,7 +45,6 @@ type (
 		apiPrefix        string
 		httpInterceptors []func(http.Handler) http.Handler
 
-		// Needs to be set manually
 		healthChecks    []health.CheckFunc
 		serverOptions   []grpc.ServerOption
 		serveMuxOptions []runtime.ServeMuxOption
@@ -306,9 +305,6 @@ func (server Server) getAPIPrefix() string {
 
 // gracefulShutdown shutdown the server gracefully, but with time limit.
 // negative timeout is considered as no timeout.
-//
-// TODO check if we really need to shutdown gRPC since we don't start the server?
-// Check both cases enable/disable TLS since we're handling them differently now.
 func gracefulShutdown(srv *http.Server, t time.Duration) {
 	ctx := context.TODO()
 	if t >= 0 {

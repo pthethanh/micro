@@ -27,6 +27,9 @@ func (env *Config) Read(ptr interface{}, opts ...config.ReadOption) error {
 			return err
 		}
 	}
+	if ops.FileNoErr != "" {
+		_ = loadEnvFromFile(ops.FileNoErr)
+	}
 	return envconfig.Process(ops.Prefix, ptr)
 }
 
