@@ -192,7 +192,7 @@ func (server *Server) ListenAndServeContext(ctx context.Context, services ...Ser
 		if len(proto) == 0 {
 			proto = "HTTP"
 		}
-		log.Context(ctx).Infof("server: registered handler, path: %s, proto: %s", r.p, proto)
+		server.log.Context(ctx).Infof("server: registered handler, path: %s, proto: %s", r.p, proto)
 		mux.Handle(r.p, r.h)
 	}
 
@@ -224,23 +224,23 @@ func (server *Server) ListenAndServeContext(ctx context.Context, services ...Ser
 	server.log.Context(ctx).Infof("server: listening at: %s", server.address)
 	select {
 	case <-ctx.Done():
-		gracefulShutdown(httpServer, server.shutdownTimeout)
+		server.gracefulShutdown(httpServer, server.shutdownTimeout)
 		return ctx.Err()
 	case err := <-errChan:
 		return err
 	case s := <-sigChan:
 		switch s {
 		case os.Interrupt, syscall.SIGTERM:
-			log.Context(ctx).Info("server: gracefully shutdown...")
-			gracefulShutdown(httpServer, server.shutdownTimeout)
+			server.log.Context(ctx).Info("server: gracefully shutdown...")
+			server.gracefulShutdown(httpServer, server.shutdownTimeout)
 		case os.Kill, syscall.SIGKILL:
-			log.Context(ctx).Info("server: kill...")
+			server.log.Context(ctx).Info("server: kill...")
 			// It's a kill request, give the server maximum 5s to shutdown.
 			t := 5 * time.Second
 			if t > server.shutdownTimeout && server.shutdownTimeout > 0 {
 				t = server.shutdownTimeout
 			}
-			gracefulShutdown(httpServer, t)
+			server.gracefulShutdown(httpServer, t)
 		}
 		// waiting for srv.Serve to return to errChan.
 	}
@@ -305,7 +305,7 @@ func (server Server) getAPIPrefix() string {
 
 // gracefulShutdown shutdown the server gracefully, but with time limit.
 // negative timeout is considered as no timeout.
-func gracefulShutdown(srv *http.Server, t time.Duration) {
+func (server *Server) gracefulShutdown(srv *http.Server, t time.Duration) {
 	ctx := context.TODO()
 	if t >= 0 {
 		var cancel context.CancelFunc
@@ -313,6 +313,6 @@ func gracefulShutdown(srv *http.Server, t time.Duration) {
 		defer cancel()
 	}
 	if err := srv.Shutdown(ctx); err != nil {
-		log.Errorf("server: shutdown error: %v", err)
+		server.log.Errorf("server: shutdown error: %v", err)
 	}
 }
