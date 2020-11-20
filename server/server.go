@@ -316,3 +316,10 @@ func (server *Server) gracefulShutdown(srv *http.Server, t time.Duration) {
 		server.log.Errorf("server: shutdown error: %v", err)
 	}
 }
+
+func (server *Server) getLogger() log.Logger {
+	if server.log == nil {
+		return log.Root()
+	}
+	return server.log
+}

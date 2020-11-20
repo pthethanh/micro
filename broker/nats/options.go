@@ -4,17 +4,17 @@ import (
 	"time"
 
 	"github.com/nats-io/nats.go"
-	"github.com/prometheus/common/log"
 	"github.com/pthethanh/micro/broker"
 	"github.com/pthethanh/micro/config"
 	"github.com/pthethanh/micro/config/envconfig"
+	"github.com/pthethanh/micro/log"
 )
 
 type (
 	// Config hold common NATS configurations.
 	Config struct {
 		Addrs    string        `envconfig:"NATS_ADDRS" default:"nats:4222"`
-		Encoder  string        `envconfig:"NATS_ENCODER" default:"proto"`
+		Encoder  string        `envconfig:"NATS_ENCODER" default:"protobuf"`
 		Timeout  time.Duration `envconfig:"NATS_TIMEOUT" default:"10s"`
 		Username string        `envconfig:"NATS_USERNAME"`
 		Password string        `envconfig:"NATS_PASSWORD"`
@@ -53,7 +53,7 @@ func FromConfig(conf Config) Option {
 		case "protobuf":
 			opts.encoder = broker.ProtoEncoder{}
 		default:
-			log.Warnf("nats: unrecognized encoder type: %s, switching back to default encoder: protobuf", conf.Encoder)
+			opts.getLogger().Warnf("nats: unrecognized encoder type: %s, switching back to default encoder: protobuf", conf.Encoder)
 			opts.encoder = broker.ProtoEncoder{}
 		}
 	}
@@ -78,5 +78,12 @@ func Address(addrs string) Option {
 func Options(opts ...nats.Option) Option {
 	return func(n *Nats) {
 		n.opts = append(n.opts, opts...)
+	}
+}
+
+// Logger is an option to provide custom logger.
+func Logger(logger log.Logger) Option {
+	return func(opts *Nats) {
+		opts.log = logger
 	}
 }

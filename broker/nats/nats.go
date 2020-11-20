@@ -19,6 +19,7 @@ type (
 		conn *nats.Conn
 		sub  chan *broker.Message
 		opts []nats.Option
+		log  log.Logger
 
 		addrs   string
 		encoder broker.Encoder
@@ -39,20 +40,21 @@ func New(opts ...Option) *Nats {
 	if n.addrs == "" {
 		n.addrs = defaultAddr
 	}
-	return &Nats{
-		encoder: n.encoder,
+	if n.log == nil {
+		n.log = log.Root()
 	}
+	return n
 }
 
 // Connect connect to target server.
 func (n *Nats) Connect() error {
-	log.Debugf("nats: connecting to %s", n.addrs)
+	n.log.Infof("nats: connecting to %s", n.addrs)
 	conn, err := nats.Connect(n.addrs, n.opts...)
 	if err != nil {
 		return err
 	}
 	n.conn = conn
-	log.Debugf("nats: connected to %s successfully", n.addrs)
+	n.log.Infof("nats: connected to %s successfully", n.addrs)
 	return nil
 }
 
@@ -80,7 +82,7 @@ func (n *Nats) Subscribe(topic string, h broker.Handler, opts ...broker.Subscrib
 	msgHandler := func(msg *nats.Msg) {
 		m := broker.Message{}
 		if err := n.encoder.Decode(msg.Data, &m); err != nil {
-			log.Errorf("nats: subscribe: decode failed, err: %v", err)
+			n.log.Errorf("nats: subscribe: decode failed, err: %v", err)
 			return
 		}
 		h(&event{
@@ -123,11 +125,18 @@ func (n *Nats) Close(ctx context.Context) error {
 	if err := syncutil.WaitCtx(ctx, 5*time.Second, func(ctx context.Context) {
 		err := n.conn.FlushWithContext(ctx)
 		if err != nil {
-			log.Context(ctx).Errorf("nats: flush failed, err: ", err)
+			n.log.Context(ctx).Errorf("nats: flush failed, err: ", err)
 		}
 		n.conn.Close()
 	}); err != nil {
-		log.Context(ctx).Errorf("nats: %v", err)
+		n.log.Context(ctx).Errorf("nats: close, err: %v", err)
 	}
 	return nil
+}
+
+func (n *Nats) getLogger() log.Logger {
+	if n.log == nil {
+		return log.Root()
+	}
+	return n.log
 }

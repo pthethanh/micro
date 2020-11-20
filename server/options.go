@@ -151,7 +151,7 @@ func Address(addr string) Option {
 	return func(opts *Server) {
 		opts.address = addr
 		if opts.lis != nil {
-			log.Debugf("server: address is set to %s, Listener will be overridden", addr)
+			opts.getLogger().Debugf("server: address is set to %s, Listener will be overridden", addr)
 			opts.lis = nil
 		}
 	}
@@ -161,7 +161,7 @@ func Address(addr string) Option {
 func Listener(lis net.Listener) Option {
 	return func(opts *Server) {
 		if opts.address != "" {
-			log.Debugf("server: listener is set to %s, address will be overridden", lis.Addr().String())
+			opts.getLogger().Debugf("server: listener is set to %s, address will be overridden", lis.Addr().String())
 			opts.address = lis.Addr().String()
 		}
 		opts.lis = lis
