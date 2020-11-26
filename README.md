@@ -127,7 +127,7 @@ See [doc](https://pkg.go.dev/github.com/pthethanh/micro/auth?tab=doc) for  more 
 
 - Standard message broker interface.
 - Memory broker.
-- More plugins can be found here: https://github.com/pthethanh/micro-plugins/broker
+- More plugins can be found here: https://github.com/pthethanh/micro-plugins/tree/main/broker
 
 See [doc](https://pkg.go.dev/github.com/pthethanh/micro/broker?tab=doc) for  more detail.
 
@@ -135,7 +135,7 @@ See [doc](https://pkg.go.dev/github.com/pthethanh/micro/broker?tab=doc) for  mor
 
 - Standard cache service interface.
 - Memory cache.
-- More plugins can be found here: https://github.com/pthethanh/micro-plugins/cache
+- More plugins can be found here: https://github.com/pthethanh/micro-plugins/tree/main/cache
 
 See [doc](https://pkg.go.dev/github.com/pthethanh/micro/cache?tab=doc) for  more detail.
 
