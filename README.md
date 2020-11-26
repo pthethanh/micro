@@ -7,7 +7,7 @@ Just a simple tool kit for building microservices.
 
 ## What is micro?
 
-micro is a Go tool kit for enterprise targeted for microservices or well designed monolith application. It doesn't aim to be a framework, but just a microservices standard library for easily and quickly build API applications.
+micro is a Go tool kit for enterprise targeted for microservices or well designed monolith application. It doesn't aim to be a framework, but just a microservices tool kit/library for easily and quickly build API applications.
 
 micro's vision is to be come a good tool kit for beginner/intermediate developers and hence it should be:
 
@@ -19,6 +19,8 @@ micro's vision is to be come a good tool kit for beginner/intermediate developer
 I expect micro requires no more than 15 minutes for a beginner/intermediate developer to be able to use the tool kit effectively. This means micro will come with lots of useful default features, but at the same time provide developers ability to provide their alternatives.
 
 micro is built around gRPC. It exposes both gRPC and REST API over 1 single port using [grpc-gateway](https://github.com/grpc-ecosystem/grpc-gateway), with default ready to use logger, metrics, health check APIs.
+
+Currently micro comes with a collection of plugins that can be found here: https://github.com/pthethanh/micro-plugins
 
 ## Getting Started
 
@@ -123,24 +125,24 @@ See [doc](https://pkg.go.dev/github.com/pthethanh/micro/auth?tab=doc) for  more 
 
 ### Broker
 
-- Broker interface.
+- Standard message broker interface.
 - Memory broker.
-- NATS broker.
+- More plugins can be found here: https://github.com/pthethanh/micro-plugins/broker
 
 See [doc](https://pkg.go.dev/github.com/pthethanh/micro/broker?tab=doc) for  more detail.
 
 ### Cache
 
-- Cache interface.
+- Standard cache service interface.
 - Memory cache.
-- Redis cache.
+- More plugins can be found here: https://github.com/pthethanh/micro-plugins/cache
 
 See [doc](https://pkg.go.dev/github.com/pthethanh/micro/cache?tab=doc) for  more detail.
 
 ### Config
 
-- Config interface.
-- Config from environment.
+- Standard config interface.
+- Config from environment variables.
 - Config from file and other options.
 
 See [doc](https://pkg.go.dev/github.com/pthethanh/micro/config?tab=doc) for  more detail.
@@ -148,16 +150,16 @@ See [doc](https://pkg.go.dev/github.com/pthethanh/micro/config?tab=doc) for  mor
 ### Health
 
 - Health check for readiness and liveness.
-- Utilities functions for checking health.
+- Utilities for checking health.
 
 See [doc](https://pkg.go.dev/github.com/pthethanh/micro/health?tab=doc) for  more detail.
 
 ### Log
 
-- Logger interface.
+- Standard logger interface.
 - Logrus implementation.
 - Context logger & tracing using X-Request-Id and X-Correlation-Id
-- Interceptor for HTTP & gRPC.
+- Interceptors for HTTP & gRPC.
 
 See [doc](https://pkg.go.dev/github.com/pthethanh/micro/log?tab=doc) for  more detail.
 
