@@ -26,6 +26,28 @@ Currently micro comes with a collection of plugins that can be found here: https
 
 ### Start your own
 
+Create new gRPC service
+
+```go
+func (s *service) SayHello(ctx context.Context, req *pb.HelloRequest) (*pb.HelloReply, error) {
+    return &pb.HelloReply{
+        Message: "Hello " + req.GetName(),
+    }, nil
+}
+
+// Register implements server.Service interface
+// It registers gRPC APIs with gRPC server.
+func (s *service) Register(srv *grpc.Server) {
+    pb.RegisterGreeterServer(srv, s)
+}
+
+// RegisterWithEndpoint implements server.EndpointService interface
+// It is used to expose REST API using gRPC Gateway.
+func (s *service) RegisterWithEndpoint(ctx context.Context, mux *runtime.ServeMux, addr string, opts []grpc.DialOption) {
+    pb.RegisterGreeterHandlerFromEndpoint(ctx, mux, addr, opts)
+}
+```
+
 Start a simple server, get configurations from environment variables.
 
 ```go
@@ -36,7 +58,8 @@ import (
 )
 
 func main() {
-    if err := server.ListenAndServe( /*services...*/ ); err != nil {
+    srv := &service{}
+    if err := server.ListenAndServe(srv); err != nil {
         panic(err)
     }
 }
