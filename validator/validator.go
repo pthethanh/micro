@@ -4,7 +4,7 @@ package validator
 import (
 	"sync"
 
-	validate "github.com/go-playground/validator"
+	validate "github.com/go-playground/validator/v10"
 )
 
 var (

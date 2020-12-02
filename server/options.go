@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/gorilla/handlers"
-	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/pthethanh/micro/auth"
 	"github.com/pthethanh/micro/auth/jwt"
@@ -23,7 +23,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
+	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
 )
 
 const (
@@ -340,9 +340,9 @@ func Recovery(handler func(context.Context, interface{}) error) Option {
 			}
 			handler = recoveryHandler(opts.log)
 		}
-		recoverOpt := grpc_recovery.WithRecoveryHandlerContext(handler)
-		opts.unaryInterceptors = append(opts.unaryInterceptors, grpc_recovery.UnaryServerInterceptor(recoverOpt))
-		opts.streamInterceptors = append(opts.streamInterceptors, grpc_recovery.StreamServerInterceptor(recoverOpt))
+		recoverOpt := recovery.WithRecoveryHandlerContext(handler)
+		opts.unaryInterceptors = append(opts.unaryInterceptors, recovery.UnaryServerInterceptor(recoverOpt))
+		opts.streamInterceptors = append(opts.streamInterceptors, recovery.StreamServerInterceptor(recoverOpt))
 	}
 }
 

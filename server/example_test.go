@@ -7,10 +7,10 @@ import (
 	"github.com/pthethanh/micro/log"
 	"github.com/pthethanh/micro/server"
 
-	grpc_opentracing "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
+	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/tracing"
 
-	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
-	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
+	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
+	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/tags"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 )
 
@@ -77,16 +77,16 @@ func ExampleNew_withExternalInterceptors() {
 	srv := server.New(
 		server.FromEnv(),
 		server.StreamInterceptors(
-			grpc_ctxtags.StreamServerInterceptor(),
-			grpc_opentracing.StreamServerInterceptor(),
+			tags.StreamServerInterceptor(),
+			tracing.StreamServerInterceptor(),
 			grpc_prometheus.StreamServerInterceptor,
-			grpc_recovery.StreamServerInterceptor(),
+			recovery.StreamServerInterceptor(),
 		),
 		server.UnaryInterceptors(
-			grpc_ctxtags.UnaryServerInterceptor(),
-			grpc_opentracing.UnaryServerInterceptor(),
+			tags.UnaryServerInterceptor(),
+			tracing.UnaryServerInterceptor(),
 			grpc_prometheus.UnaryServerInterceptor,
-			grpc_recovery.UnaryServerInterceptor(),
+			recovery.UnaryServerInterceptor(),
 		),
 	)
 	if err := srv.ListenAndServe( /*services ...Service*/ ); err != nil {

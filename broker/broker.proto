@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 package broker;
+option go_package = "github.com/pthethanh/micro/broker;broker";
 
 message Message {
 	map<string,string> header = 1;

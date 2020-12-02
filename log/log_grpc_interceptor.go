@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware/v2"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"

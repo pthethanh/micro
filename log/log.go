@@ -141,7 +141,7 @@ func (opts Options) GetWriter() (io.Writer, error) {
 		}
 		return f, nil
 	case opts.Output == "":
-		return os.Stdout, nil
+		return os.Stderr, nil
 	default:
 		return nil, fmt.Errorf("log: output not supported: %s", opts.Output)
 	}

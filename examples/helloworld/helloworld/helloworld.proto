@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 package helloworld;
+option go_package = "github.com/pthethanh/micro/examples/helloworld/helloworld;helloworld";
 
 import "google/api/annotations.proto";
 
