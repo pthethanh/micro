@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pthethanh/micro/health"
 	"github.com/pthethanh/micro/log"
 	"github.com/pthethanh/micro/server"
 	"google.golang.org/grpc"
@@ -48,13 +49,10 @@ func TestInitServerWithOptions(t *testing.T) {
 		server.Listener(lis),
 		server.JWT("secret"),
 		server.Logger(log.Root()),
-		server.HealthCheckPaths("/ready", "/live"),
+		server.HealthCheck("/health", health.NewServer(nil)),
 		server.ServeMuxOptions(server.DefaultHeaderMatcher()),
 		server.Options(grpc.ConnectionTimeout(20*time.Second)),
 		server.Timeout(20*time.Second, 20*time.Second),
-		server.HealthChecks(func(ctx context.Context) error {
-			return nil
-		}),
 	)
 	if err := srv.ListenAndServeContext(ctx); err != nil {
 		if err != ctx.Err() {

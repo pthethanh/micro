@@ -42,10 +42,10 @@ type (
 		// TLSKeyFile is the path to the TLS key file.
 		TLSKeyFile string `envconfig:"TLS_KEY_FILE"`
 
-		// LivenessPath is API path for the liveness/health check API.
-		LivenessPath string `envconfig:"LIVENESS_PATH" default:"/internal/liveness"`
-		// ReadinessPath is API path for the readiness API.
-		ReadinessPath string `envconfig:"READINESS_PATH" default:"/internal/readiness"`
+		// HealthCheckPath is API path for the health check.
+		HealthCheckPath     string        `envconfig:"HEALTH_CHECK_PATH" default:"/internal/health"`
+		HealthCheckInterval time.Duration `envconfig:"HEALTH_CHECK_INTERVAL" default:"60s"`
+		HealthCheckTimeOut  time.Duration `envconfig:"HEALTH_CHECK_TIMEOUT" default:"2s"`
 
 		// ReadTimeout is read timeout of both gRPC and HTTP server.
 		ReadTimeout time.Duration `envconfig:"READ_TIMEOUT" default:"30s"`
@@ -109,7 +109,6 @@ func FromConfig(conf Config) Option {
 	return func(server *Server) {
 		opts := []Option{
 			Address(conf.Address),
-			HealthCheckPaths(conf.ReadinessPath, conf.LivenessPath),
 			TLS(conf.TLSKeyFile, conf.TLSCertFile),
 			Timeout(conf.ReadTimeout, conf.WriteTimeout),
 			JWT(conf.JWTSecret),
@@ -131,6 +130,8 @@ func FromConfig(conf Config) Option {
 			}
 			opts = append(opts, Logger(logger))
 		}
+		// create health check by default
+		opts = append(opts, HealthCheck(conf.HealthCheckPath, health.NewServer(map[string]health.CheckFunc{}, health.Interval(conf.HealthCheckInterval), health.Timeout(conf.HealthCheckTimeOut), health.Logger(server.getLogger()))))
 		// recovery
 		if conf.Recovery {
 			opts = append(opts, Recovery(nil))
@@ -225,14 +226,6 @@ func TLS(key, cert string) Option {
 	}
 }
 
-// HealthCheckPaths is an option allows user to override readiness, liveness paths.
-func HealthCheckPaths(ready, live string) Option {
-	return func(opts *Server) {
-		opts.readinessPath = ready
-		opts.livenessPath = live
-	}
-}
-
 // Timeout is an option to override default read/write timeout.
 func Timeout(read, write time.Duration) Option {
 	if read == 0 {
@@ -262,10 +255,11 @@ func Options(serverOpts ...grpc.ServerOption) Option {
 	}
 }
 
-// HealthChecks is an option allows user to set health check function.
-func HealthChecks(checks ...health.CheckFunc) Option {
+// HealthCheck is an option allows user to provide custom health check server.
+func HealthCheck(path string, srv health.Server) Option {
 	return func(opts *Server) {
-		opts.healthChecks = append(opts.healthChecks, checks...)
+		opts.healthCheckPath = path
+		opts.healthSrv = srv
 	}
 }
 

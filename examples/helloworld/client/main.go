@@ -11,7 +11,9 @@ import (
 	"os"
 
 	pb "github.com/pthethanh/micro/examples/helloworld/helloworld"
+	"github.com/pthethanh/micro/health"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/health/grpc_health_v1"
 )
 
 func main() {
@@ -37,7 +39,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Println("GRPC Reply:", rep.Message)
+	log.Println("RESPONSE GRPC:", rep.Message)
 
 	// HTTP
 	body := bytes.NewBuffer([]byte(`{"name":"Jack"}`))
@@ -53,18 +55,28 @@ func main() {
 	}
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
-		log.Fatal("status not ok, status_code=", res.StatusCode)
+		log.Fatalf("got status_code=%d, want status_code=%d", res.StatusCode, http.StatusOK)
 	}
 	v := &pb.HelloReply{}
 	if err := json.NewDecoder(res.Body).Decode(&v); err != nil {
 		log.Fatal(err)
 	}
-	log.Println("HTTP Reply:", v.Message)
+	log.Println("RESPONSE HTTP:", v.Message)
 
 	// internal apis
-	log.Println("READINESS:", getString(fmt.Sprintf("http://%s/internal/readiness", addr)))
-	log.Println("LIVENESS:", getString(fmt.Sprintf("http://%s/internal/liveness", addr)))
+	log.Println("HEALTH CHECK HTTP:", getString(fmt.Sprintf("http://%s/internal/health", addr)))
 	log.Printf("METRICS: \n%s\n", getString(fmt.Sprintf("http://%s/internal/metrics", addr)))
+
+	rs, err := health.NewClient(conn).Check(context.Background(), &grpc_health_v1.HealthCheckRequest{
+		Service: "",
+	})
+	if err != nil {
+		log.Fatal("health check failed", err)
+	}
+	if rs.Status != health.StatusServing {
+		log.Fatalf("got health status=%d, want status=%d", rs.Status, health.StatusServing)
+	}
+	log.Println("HEALTH CHECK GRPC:", rs.Status)
 }
 
 func getString(url string) string {

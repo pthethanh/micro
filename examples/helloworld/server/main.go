@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"time"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	pb "github.com/pthethanh/micro/examples/helloworld/helloworld"
+	"github.com/pthethanh/micro/health"
 	"github.com/pthethanh/micro/log"
 	"github.com/pthethanh/micro/server"
 	"google.golang.org/grpc"
@@ -41,7 +43,12 @@ func (s *service) RegisterWithEndpoint(ctx context.Context, mux *runtime.ServeMu
 
 func main() {
 	srv := &service{}
-	if err := server.ListenAndServe(srv); err != nil {
+	if err := server.New(server.FromEnv(), server.HealthCheck("/internal/health", health.NewServer(map[string]health.CheckFunc{
+		"srv1": func(cxt context.Context) error {
+			time.Sleep(30 * time.Second)
+			return nil
+		},
+	}, health.Interval(5*time.Second)))).ListenAndServe(srv); err != nil {
 		log.Panic(err)
 	}
 }
