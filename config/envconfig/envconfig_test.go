@@ -15,7 +15,7 @@ func TestReadConfig(t *testing.T) {
 		Instances int    `envconfig:"INSTANCE"`
 		Secret    string `envconfig:"SECRET"`
 	}
-
+	defer envconfig.Close()
 	cases := []struct {
 		name    string
 		prepare func()
@@ -49,6 +49,23 @@ func TestReadConfig(t *testing.T) {
 			do: func() (myConfig, error) {
 				conf := myConfig{}
 				if err := envconfig.Read(&conf, config.WithFile("testdata/micro.env")); err != nil {
+					return conf, err
+				}
+				return conf, nil
+			},
+			want: myConfig{
+				Name:      "micro",
+				Address:   "1.1.1.1:8080",
+				Instances: 0,
+				Secret:    "",
+			},
+		},
+		{
+			name:    "load from env and env file, no error",
+			prepare: func() {},
+			do: func() (myConfig, error) {
+				conf := myConfig{}
+				if err := envconfig.Read(&conf, config.WithFileNoError("testdata/micro.env")); err != nil {
 					return conf, err
 				}
 				return conf, nil

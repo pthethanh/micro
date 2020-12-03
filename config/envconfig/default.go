@@ -5,15 +5,15 @@ import (
 )
 
 var (
-	defaultConfig = &Config{}
+	defaultConf = &Config{}
 )
 
 // Read read configuration from environment to the target ptr.
 func Read(ptr interface{}, opts ...config.ReadOption) error {
-	return defaultConfig.Read(ptr, opts...)
+	return defaultConf.Read(ptr, opts...)
 }
 
 // Close close the default config reader.
 func Close() error {
-	return defaultConfig.Close()
+	return defaultConf.Close()
 }
