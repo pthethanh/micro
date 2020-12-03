@@ -8,8 +8,12 @@ import (
 type (
 	// WhiteListAuthenticator is a special authenticator that support ignoring a list
 	// of methods that not required to be authenticated.
+	// Note the white list affects only when using with auth.UnaryInterceptor and auth.StreamInterceptor.
 	WhiteListAuthenticator interface {
 		Authenticator
+
+		// IsWhiteListed tell the auth.UnaryInterceptor and auth.StreamInterceptor if they should ignore the authentication.
+		// the fullMethod is in form of gRPC generated code, i.e... /helloworld.Greeter/SayHello
 		IsWhiteListed(fullMethod string) bool
 	}
 

@@ -73,6 +73,25 @@ func TestAuthMap(t *testing.T) {
 			})),
 			err: auth.ErrInvalidToken,
 		},
+		{
+			name: "not include authorization header",
+			ctx:  metadata.NewIncomingContext(context.Background(), metadata.New(map[string]string{})),
+			err:  auth.ErrAuthorizationMissing,
+		},
+		{
+			name: "not include metadata",
+			ctx:  context.Background(),
+			err:  auth.ErrMetadataMissing,
+		},
+		{
+			name: "error multiple auth",
+			ctx: metadata.NewIncomingContext(context.Background(), metadata.Join(metadata.New(map[string]string{
+				auth.AuthorizationMD: "jwt " + key1,
+			}), metadata.New(map[string]string{
+				auth.AuthorizationMD: "jwt " + key2,
+			}))),
+			err: auth.ErrMultipleAuthFound,
+		},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
