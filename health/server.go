@@ -3,6 +3,7 @@ package health
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -13,7 +14,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pthethanh/micro/log"
-	"github.com/pthethanh/micro/util/syncutil"
 )
 
 type (
@@ -130,7 +130,7 @@ func (s *MServer) Init(status Status) error {
 }
 
 func (s *MServer) checkAll() {
-	logger := s.log.Fields("request_id", uuid.New().String())
+	logger := s.log.Fields("correlation_id", uuid.New().String())
 	bg := time.Now()
 	overall := StatusServing
 	for name, check := range s.checks {
@@ -138,7 +138,7 @@ func (s *MServer) checkAll() {
 		if err := s.check(name, check); err != nil {
 			overall = StatusNotServing
 			status = StatusNotServing
-			logger.Infof("health check failed, name: %s, err: %v", name, err)
+			logger.Infof("health check failed, service: %s, err: %v", name, err)
 		}
 		s.SetServingStatus(name, status)
 	}
@@ -149,22 +149,27 @@ func (s *MServer) checkAll() {
 func (s *MServer) check(name string, check CheckFunc) error {
 	ctx, cancel := context.WithTimeout(context.Background(), s.timeout)
 	defer cancel()
-	f := func(ctx context.Context) { check(ctx) }
-	if err := syncutil.WaitCtx(ctx, s.timeout, f); err != nil {
+	ch := make(chan error)
+	go func() {
+		ch <- check(ctx)
+	}()
+	select {
+	case err := <-ch:
 		return err
+	case <-ctx.Done():
+		return errors.New("health: check exceed timeout")
 	}
-	return nil
 }
 
 // ServeHTTP serve health check status via HTTP.
 func (s *MServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	detail := map[string]Status{}
+	services := map[string]Status{}
 	check := func(name string) Status {
 		rs, err := s.Check(r.Context(), &grpc_health_v1.HealthCheckRequest{
 			Service: name,
 		})
 		if err != nil {
-			s.log.Errorf("health check failed, name: %s, err: %v", name, err)
+			s.log.Errorf("health check failed, service: %s, err: %v", name, err)
 			return StatusNotServing
 		}
 		return rs.Status
@@ -172,15 +177,15 @@ func (s *MServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	overall := check("")
 	for name := range s.checks {
 		ss := check(name)
-		detail[name] = ss
+		services[name] = ss
 		// if any error, overall status is set to not serving.
 		if ss != StatusServing {
 			overall = StatusNotServing
 		}
 	}
 	b, err := json.Marshal(map[string]interface{}{
-		"status": overall,
-		"detail": detail,
+		"status":   overall,
+		"services": services,
 	})
 	if err != nil {
 		b = []byte(fmt.Sprintf(`{"status":%d}`, StatusNotServing))
