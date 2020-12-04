@@ -4,12 +4,13 @@ import (
 	"context"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	pb "github.com/pthethanh/micro/examples/helloworld/helloworld"
-	"github.com/pthethanh/micro/log"
-	"github.com/pthethanh/micro/server"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	pb "github.com/pthethanh/micro/examples/helloworld/helloworld"
+	"github.com/pthethanh/micro/log"
+	"github.com/pthethanh/micro/server"
 )
 
 type (

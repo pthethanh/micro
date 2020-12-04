@@ -33,10 +33,6 @@ type (
 		tlsCertFile string
 		tlsKeyFile  string
 
-		// Paths
-		livenessPath  string
-		readinessPath string
-
 		// HTTP
 		readTimeout      time.Duration
 		writeTimeout     time.Duration
@@ -45,7 +41,6 @@ type (
 		apiPrefix        string
 		httpInterceptors []func(http.Handler) http.Handler
 
-		healthChecks    []health.CheckFunc
 		serverOptions   []grpc.ServerOption
 		serveMuxOptions []runtime.ServeMuxOption
 
@@ -57,6 +52,10 @@ type (
 		enableMetrics bool
 
 		auth auth.Authenticator
+
+		// health checks
+		healthCheckPath string
+		healthSrv       health.Server
 	}
 
 	// Option is a configuration option.
@@ -93,6 +92,10 @@ func New(ops ...Option) *Server {
 	if server.address == "" {
 		server.address = defaultAddr
 	}
+	if server.healthSrv == nil {
+		server.healthSrv = health.NewServer(map[string]health.CheckFunc{})
+	}
+
 	return server
 }
 
@@ -158,6 +161,9 @@ func (server *Server) ListenAndServeContext(ctx context.Context, services ...Ser
 		server.log.Context(ctx).Warn("server: insecured mode is enabled.")
 		dialOpts = append(dialOpts, grpc.WithInsecure())
 	}
+	// expose health services via gRPC.
+	services = append(services, server.healthSrv)
+
 	for _, s := range services {
 		s.Register(grpcServer)
 		if epSrv, ok := s.(EndpointService); ok {
@@ -171,12 +177,8 @@ func (server *Server) ListenAndServeContext(ctx context.Context, services ...Ser
 	// Attach handlers by order: internal, HTTP handlers, gRPC.
 	server.routes = append([]route{
 		{
-			p: server.getReadinessPath(),
-			h: health.Readiness(),
-		},
-		{
-			p: server.getLivenessPath(),
-			h: health.Liveness(server.healthChecks...),
+			p: server.getHealthCheckPath(),
+			h: server.healthSrv,
 		},
 	}, server.routes...)
 	// Serve gRPC and GW only if there is a service registered.
@@ -219,8 +221,13 @@ func (server *Server) ListenAndServeContext(ctx context.Context, services ...Ser
 		errChan <- httpServer.Serve(server.lis)
 	}()
 
-	// tell everyone we're ready
-	health.Ready()
+	// init health check service.
+	if err := server.healthSrv.Init(health.StatusServing); err != nil {
+		server.log.Context(ctx).Errorf("server: start health check server, err: %v", err)
+		server.gracefulShutdown(httpServer, server.shutdownTimeout)
+		return err
+	}
+	defer server.healthSrv.Close()
 	server.log.Context(ctx).Infof("server: listening at: %s", server.address)
 	select {
 	case <-ctx.Done():
@@ -269,18 +276,11 @@ func grpcHandlerFunc(isSecured bool, grpcServer *grpc.Server, mux http.Handler) 
 	}), &http2.Server{})
 }
 
-func (server Server) getReadinessPath() string {
-	if server.readinessPath == "" {
-		return "/internal/readiness"
+func (server Server) getHealthCheckPath() string {
+	if server.healthCheckPath == "" {
+		return "/internal/health"
 	}
-	return server.readinessPath
-}
-
-func (server Server) getLivenessPath() string {
-	if server.livenessPath == "" {
-		return "/internal/liveness"
-	}
-	return server.livenessPath
+	return server.healthCheckPath
 }
 
 // With allows user to add more options to the server after created.
@@ -306,6 +306,11 @@ func (server Server) getAPIPrefix() string {
 // gracefulShutdown shutdown the server gracefully, but with time limit.
 // negative timeout is considered as no timeout.
 func (server *Server) gracefulShutdown(srv *http.Server, t time.Duration) {
+	// tell clients and other services are shutting down...
+	// so that no requests should be routed to us.
+	if err := server.healthSrv.Close(); err != nil {
+		server.log.Errorf("server: shutdown health check service error: %v", err)
+	}
 	ctx := context.TODO()
 	if t >= 0 {
 		var cancel context.CancelFunc
