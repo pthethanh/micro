@@ -36,13 +36,23 @@ type (
 	Server interface {
 		grpc_health_v1.HealthServer
 		http.Handler
+		ServingStatusSetter
 		// Register register the Server with grpc.Server
 		Register(srv *grpc.Server)
-		// Init inits overall status using empty string as defined in https://github.com/grpc/grpc/blob/master/doc/health-checking.md
-		// and do additional initialize if any.
+		// Init inits and perform a first health check immediately
+		// to update overall status and all dependent services's status.
 		Init(status Status) error
-		// Close close the underlying resources
+		// Close close the underlying resources.
+		// It sets all serving status to NOT_SERVING, and configures the server to
+		// ignore all future status changes.
 		Close() error
+	}
+
+	// ServingStatusSetter is an interface to set status for a service according to gRPC Health Check protocol.
+	ServingStatusSetter interface {
+		// SetServingStatus is called when need to reset the serving status of a service
+		// or insert a new service entry into the statusMap.
+		SetServingStatus(name string, status Status)
 	}
 
 	// Status is an alias of grpc_health_v1.HealthCheckResponse_ServingStatus.
@@ -79,9 +89,8 @@ func NewServer(m map[string]CheckFunc, opts ...ServerOption) *MServer {
 		srv.log = log.Root()
 	}
 	if srv.timeout == 0 {
-		srv.timeout = 5 * time.Second
+		srv.timeout = 2 * time.Second
 	}
-
 	srv.ticker = time.NewTicker(srv.interval)
 
 	return srv
@@ -96,16 +105,19 @@ func (s *MServer) Register(srv *grpc.Server) {
 // the services' status base on the given interval.
 func (s *MServer) Init(status Status) error {
 	s.SetServingStatus("", status)
-	// set dependencies service as not serving.
+	// if there is no dependent services, don't need to do anything else.
+	if len(s.checks) == 0 {
+		return nil
+	}
+	// if there are dependent services, set overall status and all dependent services
+	// to NotServing as we don't know their status yet.
+	s.SetServingStatus("", StatusNotServing)
 	for name := range s.checks {
 		s.SetServingStatus(name, StatusNotServing)
 	}
-	// set overall status to not serving if there is any dependencies services.
-	if len(s.checks) > 0 {
-		s.SetServingStatus("", StatusNotServing)
-	}
-	// start a first check
+	// start a first check immediately.
 	s.checkAll()
+	// schedule the check
 	go func() {
 		for {
 			select {
@@ -118,29 +130,29 @@ func (s *MServer) Init(status Status) error {
 }
 
 func (s *MServer) checkAll() {
-	logger := s.log.Fields("health_check_id", uuid.New().String())
-	logger.Fields("phase", "started").Infof("health check started")
+	logger := s.log.Fields("request_id", uuid.New().String())
 	bg := time.Now()
 	overall := StatusServing
 	for name, check := range s.checks {
-		if err := s.checkAndUpdateStatus(name, check); err != nil {
+		status := StatusServing
+		if err := s.check(name, check); err != nil {
 			overall = StatusNotServing
+			status = StatusNotServing
+			logger.Infof("health check failed, name: %s, err: %v", name, err)
 		}
+		s.SetServingStatus(name, status)
 	}
 	s.SetServingStatus("", overall)
-	logger.Fields("phase", "completed", "duration", time.Since(bg)).Info("health check completed")
+	logger.Fields("status", overall, "duration", time.Since(bg)).Info("health check completed")
 }
 
-func (s *MServer) checkAndUpdateStatus(name string, check CheckFunc) error {
-	status := StatusServing
+func (s *MServer) check(name string, check CheckFunc) error {
 	ctx, cancel := context.WithTimeout(context.Background(), s.timeout)
 	defer cancel()
 	f := func(ctx context.Context) { check(ctx) }
 	if err := syncutil.WaitCtx(ctx, s.timeout, f); err != nil {
-		status = StatusNotServing
 		return err
 	}
-	s.SetServingStatus(name, status)
 	return nil
 }
 
@@ -152,7 +164,7 @@ func (s *MServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			Service: name,
 		})
 		if err != nil {
-			s.log.Fields("health_check_service", name).Errorf("check failed, err: %v", err)
+			s.log.Errorf("health check failed, name: %s, err: %v", name, err)
 			return StatusNotServing
 		}
 		return rs.Status
@@ -166,10 +178,9 @@ func (s *MServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			overall = StatusNotServing
 		}
 	}
-
 	b, err := json.Marshal(map[string]interface{}{
-		"status":   overall,
-		"services": detail,
+		"status": overall,
+		"detail": detail,
 	})
 	if err != nil {
 		b = []byte(fmt.Sprintf(`{"status":%d}`, StatusNotServing))
@@ -182,10 +193,11 @@ func (s *MServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // Close sets all serving status to NOT_SERVING, and configures the server to
 // ignore all future status changes.
 func (s *MServer) Close() error {
-	if s.ticker == nil {
-		return nil
+	if s.ticker != nil {
+		s.ticker.Stop()
 	}
-	s.ticker.Stop()
-	s.Server.Shutdown()
+	if s.Server != nil {
+		s.Server.Shutdown()
+	}
 	return nil
 }

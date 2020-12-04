@@ -11,19 +11,19 @@ import (
 	"time"
 
 	"github.com/gorilla/handlers"
+	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
 	"github.com/pthethanh/micro/auth"
 	"github.com/pthethanh/micro/auth/jwt"
 	"github.com/pthethanh/micro/config"
 	"github.com/pthethanh/micro/config/envconfig"
 	"github.com/pthethanh/micro/health"
 	"github.com/pthethanh/micro/log"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-
-	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
 )
 
 const (
@@ -131,7 +131,11 @@ func FromConfig(conf Config) Option {
 			opts = append(opts, Logger(logger))
 		}
 		// create health check by default
-		opts = append(opts, HealthCheck(conf.HealthCheckPath, health.NewServer(map[string]health.CheckFunc{}, health.Interval(conf.HealthCheckInterval), health.Timeout(conf.HealthCheckTimeOut), health.Logger(server.getLogger()))))
+		opts = append(opts, HealthCheck(conf.HealthCheckPath,
+			health.NewServer(map[string]health.CheckFunc{},
+				health.Interval(conf.HealthCheckInterval),
+				health.Timeout(conf.HealthCheckTimeOut),
+				health.Logger(server.getLogger()))))
 		// recovery
 		if conf.Recovery {
 			opts = append(opts, Recovery(nil))
