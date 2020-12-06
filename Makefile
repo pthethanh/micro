@@ -26,7 +26,7 @@ fmt:
 	$(GO_BUILD_ENV) go fmt $(GO_FILES)
 
 test:
-	$(GO_BUILD_ENV) go test $(GO_FILES) -cover -v -count=1
+	$(GO_BUILD_ENV) go test $(GO_FILES) -cover -count=1
 
 mod_tidy:
 	$(GO_BUILD_ENV) go mod tidy

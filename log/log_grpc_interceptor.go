@@ -18,7 +18,7 @@ import (
 func StreamInterceptor(l Logger) grpc.StreamServerInterceptor {
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 		correlationID := correlationIDFromGRPCContext(ss.Context())
-		logger := l.Fields(correlationIDKey, correlationID, "method", info.FullMethod)
+		logger := l.Fields(CorrelationID, correlationID, "method", info.FullMethod)
 		newCtx := NewContext(ss.Context(), logger)
 		wrapped := grpc_middleware.WrapServerStream(ss)
 		wrapped.WrappedContext = newCtx
@@ -37,7 +37,7 @@ func StreamInterceptor(l Logger) grpc.StreamServerInterceptor {
 func UnaryInterceptor(l Logger) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 		correlationID := correlationIDFromGRPCContext(ctx)
-		logger := l.Fields(correlationIDKey, correlationID, "method", info.FullMethod)
+		logger := l.Fields(CorrelationID, correlationID, "method", info.FullMethod)
 		newCtx := NewContext(ctx, logger)
 		return runWithLog(logger, info.FullMethod, func() (interface{}, error) {
 			return handler(newCtx, req)

@@ -76,9 +76,10 @@ type (
 )
 
 const (
-	loggerKey        contextKey = contextKey("logger_key")
-	filePrefix                  = "file://"
-	correlationIDKey string     = "correlation_id"
+	loggerKey  contextKey = contextKey("logger_key")
+	filePrefix            = "file://"
+	// CorrelationID is field name of Correlation ID that is used to track related logs.
+	CorrelationID string = "correlation_id"
 )
 
 // These are the different logging levels.

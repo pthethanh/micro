@@ -43,9 +43,7 @@ type (
 		TLSKeyFile string `envconfig:"TLS_KEY_FILE"`
 
 		// HealthCheckPath is API path for the health check.
-		HealthCheckPath     string        `envconfig:"HEALTH_CHECK_PATH" default:"/internal/health"`
-		HealthCheckInterval time.Duration `envconfig:"HEALTH_CHECK_INTERVAL" default:"60s"`
-		HealthCheckTimeOut  time.Duration `envconfig:"HEALTH_CHECK_TIMEOUT" default:"2s"`
+		HealthCheckPath string `envconfig:"HEALTH_CHECK_PATH" default:"/internal/health"`
 
 		// ReadTimeout is read timeout of both gRPC and HTTP server.
 		ReadTimeout time.Duration `envconfig:"READ_TIMEOUT" default:"30s"`
@@ -133,8 +131,6 @@ func FromConfig(conf Config) Option {
 		// create health check by default
 		opts = append(opts, HealthCheck(conf.HealthCheckPath,
 			health.NewServer(map[string]health.CheckFunc{},
-				health.Interval(conf.HealthCheckInterval),
-				health.Timeout(conf.HealthCheckTimeOut),
 				health.Logger(server.getLogger()))))
 		// recovery
 		if conf.Recovery {

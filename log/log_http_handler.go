@@ -18,7 +18,7 @@ func NewHTTPContextHandler(l Logger) func(http.Handler) http.Handler {
 			ctx := r.Context()
 			// allow requests in microservices environment can be traced.
 			logger := l.Fields(
-				correlationIDKey, getCorrelationID(r),
+				CorrelationID, getCorrelationID(r),
 				"path", r.URL.Path,
 				"remote_addr", r.RemoteAddr,
 				"method", r.Method)
