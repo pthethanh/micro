@@ -1,5 +1,6 @@
-// Package server provides a convenient way to start a new ready to use server with default
-// HTTP API for readiness, liveness and Prometheus metrics.
+// Package server provides a convenient way to create or start a new server
+// that serves both gRPC and HTTP over 1 single port
+// with default useful APIs for authentication, health check, metrics,...
 package server
 
 import (

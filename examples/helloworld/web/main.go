@@ -4,12 +4,12 @@ import (
 	"context"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"google.golang.org/grpc"
+
 	pb "github.com/pthethanh/micro/examples/helloworld/helloworld"
 	"github.com/pthethanh/micro/log"
 	"github.com/pthethanh/micro/server"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	"github.com/pthethanh/micro/status"
 )
 
 type (
@@ -22,7 +22,7 @@ type (
 func (s *service) SayHello(ctx context.Context, req *pb.HelloRequest) (*pb.HelloReply, error) {
 	log.Context(ctx).Info("name", req.Name)
 	if req.Name == "" {
-		return nil, status.Error(codes.InvalidArgument, "name must not be empty")
+		return nil, status.InvalidArgument("name must not be empty")
 	}
 	return &pb.HelloReply{
 		Message: "Hello " + req.GetName(),
