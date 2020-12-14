@@ -25,10 +25,8 @@ func TestAuthWhiteList(t *testing.T) {
 	secret := []byte("test1")
 	a := jwt.Authenticator(secret)
 	key, err := jwt.Encode(jwt.Claims{
-		StandardClaims: jwt.StandardClaims{
-			Id:        "test",
-			ExpiresAt: time.Now().Add(10 * time.Second).Unix(),
-		},
+		ID:        "test",
+		ExpiresAt: time.Now().Add(10 * time.Second).Unix(),
 	}, secret)
 	if err != nil {
 		t.Fatal(err)

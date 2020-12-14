@@ -14,10 +14,8 @@ func TestAuthMap(t *testing.T) {
 	s1 := []byte("test1")
 	auth1 := jwt.Authenticator(s1)
 	key1, err := jwt.Encode(jwt.Claims{
-		StandardClaims: jwt.StandardClaims{
-			Id:        "test",
-			ExpiresAt: time.Now().Add(10 * time.Second).Unix(),
-		},
+		ID:        "test",
+		ExpiresAt: time.Now().Add(10 * time.Second).Unix(),
 	}, s1)
 	if err != nil {
 		t.Fatal(err)

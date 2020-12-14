@@ -156,9 +156,7 @@ func TestTokenString(t *testing.T) {
 
 func TestSubjectEqual(t *testing.T) {
 	ctx := NewContext(context.Background(), Claims{
-		StandardClaims: StandardClaims{
-			Subject: "subject-1",
-		},
+		Subject: "subject-1",
 	})
 	// equal
 	if !SubjectEquals(ctx, "subject-1") {

@@ -3,50 +3,12 @@ package jwt
 
 import (
 	"context"
-	"strings"
 
 	"github.com/pthethanh/micro/auth"
 
 	"github.com/dgrijalva/jwt-go"
 	"google.golang.org/grpc/metadata"
 )
-
-// StandardClaims alias of jwt-go jwt.StandardClaims
-type StandardClaims = jwt.StandardClaims
-
-// Claims represents the claims provided by the JWT.
-type Claims struct {
-	StandardClaims
-
-	Scope string `json:"scope,omitempty"`
-	// Once we have service-accounts in place, this should be removed.
-	// Its up to each service to decide how they would like to handle
-	// admin-callers.
-	Admin bool `json:"admin,omitempty"`
-
-	// Metadata is a map for client to inject additional information whenever needed.
-	Metadata map[string]interface{}
-}
-
-// ContainScopes checks if `scopes` are present within the Claim.Scope.
-func (c Claims) ContainScopes(scopes ...string) bool {
-	currentScopes := strings.Split(c.Scope, " ")
-	if len(currentScopes) == 0 {
-		return false
-	}
-	for _, scope := range scopes {
-		match := false
-		for _, s := range currentScopes {
-			if scope == s {
-				match = true
-			}
-		}
-		if !match {
-			return false
-		}
-	}
-	return true
-}
 
 // Authenticator returns an AuthenticatorFunc that
 // validates the provided JWT token in the :authorization header
