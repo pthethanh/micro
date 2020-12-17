@@ -1,9 +1,9 @@
-package fieldmaskutil_test
+package fieldmask_test
 
 import (
 	"testing"
 
-	"github.com/pthethanh/micro/util/fieldmaskutil"
+	"github.com/pthethanh/micro/util/fieldmask"
 )
 
 type (
@@ -84,7 +84,7 @@ func TestValidateFieldMask(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			if npath, valid := fieldmaskutil.IsValid(c.path, v); valid != c.valid && npath != c.npath {
+			if npath, valid := fieldmask.IsValid(c.path, v); valid != c.valid && npath != c.npath {
 				t.Errorf("got valid=%t, path=%s, want valid=%t, path=%s", valid, npath, c.valid, c.path)
 			}
 		})
@@ -95,7 +95,7 @@ func TestGetValidFieldMask(t *testing.T) {
 	v := MyStruct{
 		NextMeta: &Meta{},
 	}
-	paths := fieldmaskutil.GetValidFields([]string{
+	paths := fieldmask.GetValidFields([]string{
 		"name",
 		"NextMeta.values",
 		"meta.values",
@@ -112,10 +112,10 @@ func TestTrimPrefix(t *testing.T) {
 		Meta:     &Meta{},
 		NextMeta: &Meta{},
 	}
-	paths := fieldmaskutil.GetValidFields([]string{
+	paths := fieldmask.GetValidFields([]string{
 		"meta.values",
 		"NextMeta.values",
-	}, v, fieldmaskutil.TrimPrefix("meta."), fieldmaskutil.ToSnakeCase)
+	}, v, fieldmask.TrimPrefix("meta."), fieldmask.ToSnakeCase)
 	want := 2
 	if len(paths) != want {
 		t.Fatalf("got len(paths)=%d, want len(paths)=%d", len(paths), want)
@@ -138,10 +138,10 @@ func TestRemoveFields(t *testing.T) {
 		Password: "123",
 		Age:      22,
 	}
-	paths := fieldmaskutil.GetValidFields([]string{
+	paths := fieldmask.GetValidFields([]string{
 		"name",
 		"password",
-	}, v, fieldmaskutil.RemoveFields("password", "age"))
+	}, v, fieldmask.RemoveFields("password", "age"))
 	want := 1
 	if len(paths) != want {
 		t.Errorf("got len(paths)=%d, want len(paths)=%d", len(paths), want)
@@ -176,7 +176,7 @@ func TestContainsOneOf(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			if ok := fieldmaskutil.ContainsOneOf(c.in, c.v...); ok != c.expect {
+			if ok := fieldmask.ContainsOneOf(c.in, c.v...); ok != c.expect {
 				t.Errorf("got result=%v, want result=%v", ok, c.expect)
 			}
 		})

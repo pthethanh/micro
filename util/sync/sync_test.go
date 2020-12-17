@@ -1,11 +1,11 @@
-package syncutil_test
+package sync_test
 
 import (
 	"context"
 	"testing"
 	"time"
 
-	"github.com/pthethanh/micro/util/syncutil"
+	"github.com/pthethanh/micro/util/sync"
 )
 
 func TestWaitCtx(t *testing.T) {
@@ -48,7 +48,7 @@ func TestWaitCtx(t *testing.T) {
 					time.Sleep(1 * time.Second)
 				},
 			},
-			expectedErr: syncutil.ErrTimeout,
+			expectedErr: sync.ErrTimeout,
 		},
 		{
 			name: "context has deadline, jobs takes longer time to complete than deadline",
@@ -59,7 +59,7 @@ func TestWaitCtx(t *testing.T) {
 					time.Sleep(1 * time.Second)
 				},
 			},
-			expectedErr: syncutil.ErrTimeout,
+			expectedErr: sync.ErrTimeout,
 		},
 	}
 	for _, test := range tests {
@@ -70,7 +70,7 @@ func TestWaitCtx(t *testing.T) {
 				ctx, cancel = context.WithTimeout(ctx, test.ctx)
 				defer cancel()
 			}
-			if err := syncutil.WaitCtx(ctx, test.def, test.jobs...); err != test.expectedErr {
+			if err := sync.WaitCtx(ctx, test.def, test.jobs...); err != test.expectedErr {
 				t.Error(err)
 			}
 		})

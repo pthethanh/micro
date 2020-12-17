@@ -7,6 +7,8 @@ import (
 	"net/http"
 
 	"github.com/pthethanh/micro/log"
+
+	spb "google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -344,4 +346,13 @@ func JSON(err error) []byte {
 		return []byte(fmt.Sprintf(`{"code":%d, "message":"%s"}`, codes.Internal, codes.Internal.String()))
 	}
 	return b
+}
+
+// Parse try to parse the given data to a Status.
+func Parse(data []byte) (*Status, error) {
+	s := spb.Status{}
+	if err := json.Unmarshal(data, &s); err != nil {
+		return nil, err
+	}
+	return status.FromProto(&s), nil
 }

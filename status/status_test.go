@@ -207,3 +207,60 @@ func TestConvertJSON(t *testing.T) {
 		t.Errorf("got data=%s, want data contains %v", b, exp)
 	}
 }
+
+func TestParse(t *testing.T) {
+	cases := []struct {
+		name    string
+		input   string
+		expMsg  string
+		expCode status.Code
+		expErr  error
+	}{
+		{
+			name:    "good with error",
+			input:   fmt.Sprintf(`{"code": %d, "message": "not found"}`, codes.NotFound),
+			expMsg:  "not found",
+			expCode: codes.NotFound,
+		},
+		{
+			name:    "good with OK",
+			input:   fmt.Sprintf(`{"code": %d, "message": "ok con de"}`, codes.OK),
+			expMsg:  "ok con de",
+			expCode: codes.OK,
+		},
+		{
+			name:    "error partial different from status.Status",
+			input:   fmt.Sprintf(`{"code": %d, "error": "error"}`, codes.Internal),
+			expMsg:  "",
+			expCode: codes.Internal,
+		},
+		{
+			name:    "error totally different from status.Status",
+			input:   `{"error_code": 20, "error_message": "error"}`,
+			expMsg:  "",
+			expCode: codes.OK,
+		},
+		{
+			name:   "invalid byte array",
+			input:  fmt.Sprintf(`{"code": %d, "error": "error"`, codes.Internal),
+			expErr: errors.New("some error"),
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			s, err := status.Parse([]byte(c.input))
+			if err != nil && c.expErr == nil {
+				t.Fatalf("got err=%v, want err=nil\n", err)
+			}
+			if err == nil && c.expErr != nil {
+				t.Fatal("got err=nil, want err!=nil")
+			}
+			if s.Code() != c.expCode {
+				t.Fatalf("got code=%v, want code=%v\n", s.Code(), c.expCode)
+			}
+			if s.Message() != c.expMsg {
+				t.Fatalf("got message=%v, want message=%v\n", s.Message(), c.expMsg)
+			}
+		})
+	}
+}

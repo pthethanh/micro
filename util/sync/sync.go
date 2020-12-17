@@ -1,4 +1,4 @@
-package syncutil
+package sync
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 
 var (
 	// ErrTimeout timeout exceed error.
-	ErrTimeout = errors.New("timeutil: timeout exceed")
+	ErrTimeout = errors.New("sync: timeout exceed")
 )
 
 // WaitCtx executes the given jobs in goroutines, and wait until the jobs done
