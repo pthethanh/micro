@@ -17,16 +17,16 @@ func Write(w http.ResponseWriter, contentType string, code int, body []byte) {
 }
 
 // WriteError write the status code and the error in JSON format on a http ResponseWriter.
-// For writing error as text, use Write
+// For writing error as plain text or other formats, use Write.
 func WriteError(w http.ResponseWriter, code int, err error) {
-	WriteJSON(w, code, status.JSON(err))
+	Write(w, "application/json", code, status.JSON(err))
 }
 
 // WriteJSON write status and JSON data to http ResponseWriter.
 func WriteJSON(w http.ResponseWriter, code int, data interface{}) {
 	b, err := json.Marshal(data)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		Write(w, "application/json", code, status.JSON(status.Internal("http: write json, err: %v", err)))
 		return
 	}
 	Write(w, "application/json", code, b)
