@@ -60,7 +60,7 @@ func TestErrors(t *testing.T) {
 	if !status.IsDataLoss(status.DataLoss("")) {
 		t.Errorf("got !DataLoss, want DataLoss")
 	}
-	if !status.IsUnauthenticated(status.Unauthenticated("")) {
+	if !status.IsUnauthenticated(status.Unauthenticated("unauthenticated")) {
 		t.Errorf("got !Unauthenticated, want Unauthenticated")
 	}
 	if !status.IsUnavailable(status.Unavailable("")) {
@@ -70,6 +70,9 @@ func TestErrors(t *testing.T) {
 		t.Errorf("got !Unavailable, want Unavailable")
 	}
 	if !status.IsUnavailable(status.New(codes.Unavailable, "").Err()) {
+		t.Errorf("new - got !Unavailable, want Unavailable")
+	}
+	if !status.IsUnavailable(status.New(codes.Unavailable, "not available").Err()) {
 		t.Errorf("new - got !Unavailable, want Unavailable")
 	}
 	if !status.IsUnavailable(status.New(codes.Unavailable, "server %d unavailable", 1).Err()) {

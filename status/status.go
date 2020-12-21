@@ -24,6 +24,9 @@ type (
 // New return new status.
 func New(code Code, fmt string, args ...interface{}) *Status {
 	if len(args) == 0 {
+		if fmt == "" {
+			return status.New(code, code.String())
+		}
 		return status.New(code, fmt)
 	}
 	return status.Newf(code, fmt, args...)
@@ -32,6 +35,9 @@ func New(code Code, fmt string, args ...interface{}) *Status {
 // Error return new error.
 func Error(code Code, fmt string, args ...interface{}) error {
 	if len(args) == 0 {
+		if fmt == "" {
+			return status.Error(code, code.String())
+		}
 		return status.Error(code, fmt)
 	}
 	return status.Errorf(code, fmt, args...)
