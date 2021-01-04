@@ -1,4 +1,4 @@
-package http_test
+package httputil_test
 
 import (
 	"bytes"
@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"github.com/pthethanh/micro/status"
-	util "github.com/pthethanh/micro/util/http"
+	"github.com/pthethanh/micro/util/httputil"
 	"google.golang.org/grpc/codes"
 )
 
@@ -18,7 +18,7 @@ func TestWrite(t *testing.T) {
 	rc := httptest.NewRecorder()
 	body := []byte(`{"name":"test"}`)
 	rct := "application/json"
-	util.Write(rc, rct, http.StatusOK, body)
+	httputil.Write(rc, rct, http.StatusOK, body)
 	if bytes.Compare(rc.Body.Bytes(), body) != 0 {
 		t.Errorf("got body: %s, want body: %s", rc.Body.Bytes(), body)
 	}
@@ -36,7 +36,7 @@ func TestWriteJSON(t *testing.T) {
 		"name": "jack",
 	}
 	rct := "application/json"
-	util.WriteJSON(rc, http.StatusOK, body)
+	httputil.WriteJSON(rc, http.StatusOK, body)
 
 	want := []byte(`{"name":"jack"}`)
 	if bytes.Compare(rc.Body.Bytes(), want) != 0 {
@@ -53,7 +53,7 @@ func TestWriteJSON(t *testing.T) {
 	rc = httptest.NewRecorder()
 	// use chan to make json.Marshal fail.
 	invalidData := make(chan int)
-	util.WriteJSON(rc, http.StatusOK, invalidData)
+	httputil.WriteJSON(rc, http.StatusOK, invalidData)
 	s, err := status.Parse(rc.Body.Bytes())
 	if err != nil {
 		t.Fatalf("got unexpected error: %v\n", err)
@@ -68,7 +68,7 @@ func TestWriteError_Status(t *testing.T) {
 	rc := httptest.NewRecorder()
 	rct := "application/json"
 	give := status.InvalidArgument("invalid request")
-	util.WriteError(rc, http.StatusBadRequest, give)
+	httputil.WriteError(rc, http.StatusBadRequest, give)
 
 	if ct := rc.Header().Get("Content-Type"); ct != rct {
 		t.Errorf("got content type: %v, want content type: %v", ct, rct)
@@ -89,7 +89,7 @@ func TestWriteError_NormalError(t *testing.T) {
 	rc := httptest.NewRecorder()
 	rct := "application/json"
 	give := errors.New("internal error")
-	util.WriteError(rc, http.StatusInternalServerError, give)
+	httputil.WriteError(rc, http.StatusInternalServerError, give)
 
 	if ct := rc.Header().Get("Content-Type"); ct != rct {
 		t.Errorf("got content type: %v, want content type: %v", ct, rct)

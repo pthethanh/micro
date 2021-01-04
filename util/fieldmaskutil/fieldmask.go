@@ -1,5 +1,5 @@
-// Package fieldmask provides convenient utilities for working with field_mask.
-package fieldmask
+// Package fieldmaskutil provides convenient utilities for working with field_mask.
+package fieldmaskutil
 
 import (
 	"fmt"
