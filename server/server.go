@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sort"
 	"strings"
 	"syscall"
 	"time"
@@ -36,12 +37,13 @@ type (
 		tlsKeyFile  string
 
 		// HTTP
-		readTimeout      time.Duration
-		writeTimeout     time.Duration
-		shutdownTimeout  time.Duration
-		routes           []route
-		apiPrefix        string
-		httpInterceptors []func(http.Handler) http.Handler
+		readTimeout          time.Duration
+		writeTimeout         time.Duration
+		shutdownTimeout      time.Duration
+		routes               []route
+		apiPrefix            string
+		httpInterceptors     []func(http.Handler) http.Handler
+		routesPrioritization bool
 
 		serverOptions   []grpc.ServerOption
 		serveMuxOptions []runtime.ServeMuxOption
@@ -177,7 +179,7 @@ func (server *Server) ListenAndServeContext(ctx context.Context, services ...Ser
 	if server.enableMetrics {
 		grpc_prometheus.Register(grpcServer)
 	}
-	// Attach handlers handlers by priority: internal, user provided, gRPC.
+	// Add internal handlers.
 	server.routes = append([]route{
 		{
 			p: server.getHealthCheckPath(),
@@ -185,14 +187,12 @@ func (server *Server) ListenAndServeContext(ctx context.Context, services ...Ser
 			m: []string{http.MethodGet},
 		},
 	}, server.routes...)
-	for _, r := range server.routes {
-		server.registerHTTPHandler(ctx, router, r)
-	}
-	// Serve gRPC and GW only and only if there is at least a service registered.
+	// Serve gRPC and GW only and only if there is at least one service registered.
 	if len(services) > 0 {
-		server.log.Context(ctx).Infof("server: registered gRPC+HTTP handler, path: %s", server.getAPIPrefix())
-		router.PathPrefix(server.getAPIPrefix()).Handler(gw)
+		server.routes = append(server.routes, route{p: server.getAPIPrefix(), h: gw, prefix: true})
 	}
+	// register all http handlers to the router.
+	server.registerHTTPHandlers(ctx, router)
 
 	errChan := make(chan error, 1)
 	sigChan := make(chan os.Signal, 1)
@@ -325,17 +325,28 @@ func (server *Server) getLogger() log.Logger {
 	return server.log
 }
 
-// registerHTTPHandler register the given  route to the given router.
-func (server *Server) registerHTTPHandler(ctx context.Context, router *mux.Router, r route) {
-	var route *mux.Route
-	if r.prefix {
-		route = router.PathPrefix(r.p).Handler(r.h)
-		server.log.Context(ctx).Infof("server: registered HTTP handler, path prefix: %s", r.p)
-	} else {
-		route = router.Path(r.p).Handler(r.h)
-		server.log.Context(ctx).Infof("server: registered HTTP handler, path: %s", r.p)
+func (server *Server) registerHTTPHandlers(ctx context.Context, router *mux.Router) {
+	// Longer patterns take precedence over shorter ones.
+	if server.routesPrioritization {
+		sort.Slice(server.routes, func(i, j int) bool {
+			v := len(strings.Split(server.routes[i].p, "/")) - len(strings.Split(server.routes[j].p, "/"))
+			if v != 0 {
+				return v > 0
+			}
+			return strings.Compare(server.routes[i].p, server.routes[j].p) > 0
+		})
 	}
-	if len(r.m) > 0 {
-		route.Methods(r.m...)
+	for _, r := range server.routes {
+		var route *mux.Route
+		if r.prefix {
+			route = router.PathPrefix(r.p).Handler(r.h)
+			server.log.Context(ctx).Infof("server: registered HTTP handler, path prefix: %s", r.p)
+		} else {
+			route = router.Path(r.p).Handler(r.h)
+			server.log.Context(ctx).Infof("server: registered HTTP handler, path: %s", r.p)
+		}
+		if len(r.m) > 0 {
+			route.Methods(r.m...)
+		}
 	}
 }

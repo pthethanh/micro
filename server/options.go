@@ -81,6 +81,8 @@ type (
 		Metrics bool `envconfig:"METRICS" default:"true"`
 		// MetricsPath is API path for Prometheus metrics.
 		MetricsPath string `envconfig:"METRICS_PATH" default:"/internal/metrics"`
+
+		RoutesPrioritization bool `envconfig:"ROUTES_PRIORITIZATION" default:"true"`
 	}
 )
 
@@ -113,6 +115,7 @@ func FromConfig(conf Config) Option {
 			APIPrefix(conf.APIPrefix),
 			CORS(conf.CORSAllowedCredential, conf.CORSAllowedHeaders, conf.CORSAllowedMethods, conf.CORSAllowedOrigins),
 			ShutdownTimeout(conf.ShutdownTimeout),
+			RoutesPrioritization(conf.RoutesPrioritization),
 		}
 		if conf.Metrics {
 			opts = append(opts, Metrics(conf.MetricsPath))
@@ -284,6 +287,8 @@ func AddressFromEnv() Option {
 }
 
 // HTTPHandler is an option allows user to add additional HTTP handlers.
+// Longer patterns take precedence over shorter ones by default,
+// use RoutesPrioritization option to disable this rule.
 // See github.com/gorilla/mux for defining path with variables/patterns.
 func HTTPHandler(path string, h http.Handler, methods ...string) Option {
 	return func(opts *Server) {
@@ -295,6 +300,13 @@ func HTTPHandler(path string, h http.Handler, methods ...string) Option {
 func HTTPPrefixHandler(prefix string, h http.Handler, methods ...string) Option {
 	return func(opts *Server) {
 		opts.routes = append(opts.routes, route{p: prefix, h: h, prefix: true, m: methods})
+	}
+}
+
+// RoutesPrioritization enable/disable the routes prioritization.
+func RoutesPrioritization(enable bool) Option {
+	return func(opts *Server) {
+		opts.routesPrioritization = enable
 	}
 }
 
