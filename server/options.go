@@ -65,7 +65,7 @@ type (
 		ContextLogger bool `envconfig:"CONTEXT_LOGGER" default:"true"`
 
 		// Recovery is a short way to enable recovery interceptors for both unary and stream handlers.
-		Recovery bool `encvonfig:"RECOVERY" default:"true"`
+		Recovery bool `envconfig:"RECOVERY" default:"true"`
 
 		// CORS options
 		CORSAllowedHeaders    []string `envconfig:"CORS_ALLOWED_HEADERS"`
@@ -284,10 +284,17 @@ func AddressFromEnv() Option {
 }
 
 // HTTPHandler is an option allows user to add additional HTTP handlers.
-// If you want to apply middlewares on the HTTP handlers, do it yourselves.
-func HTTPHandler(path string, h http.Handler) Option {
+// See github.com/gorilla/mux for defining path with variables/patterns.
+func HTTPHandler(path string, h http.Handler, methods ...string) Option {
 	return func(opts *Server) {
-		opts.routes = append(opts.routes, route{p: path, h: h})
+		opts.routes = append(opts.routes, route{p: path, h: h, m: methods})
+	}
+}
+
+// HTTPPrefixHandler similar to HTTPHandler but matching by path prefix.
+func HTTPPrefixHandler(prefix string, h http.Handler, methods ...string) Option {
+	return func(opts *Server) {
+		opts.routes = append(opts.routes, route{p: prefix, h: h, prefix: true, m: methods})
 	}
 }
 
@@ -316,7 +323,7 @@ func Web(pathPrefix, dir, index string) Option {
 		pathPrefix = "/"
 	}
 	return func(opts *Server) {
-		HTTPHandler(pathPrefix, spaHandler{
+		HTTPPrefixHandler(pathPrefix, spaHandler{
 			index: index,
 			dir:   dir,
 		})(opts)
@@ -395,6 +402,7 @@ func Metrics(path string) Option {
 		opts.routes = append(opts.routes, route{
 			p: path,
 			h: promhttp.Handler(),
+			m: []string{http.MethodGet},
 		})
 	}
 }
