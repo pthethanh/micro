@@ -13,7 +13,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/gorilla/mux"
 	"github.com/pthethanh/micro/auth"
 	"github.com/pthethanh/micro/health"
 	"github.com/pthethanh/micro/log"
@@ -75,10 +74,9 @@ type (
 	}
 
 	route struct {
-		p      string
-		h      http.Handler
-		m      []string
-		prefix bool
+		p     string
+		h     http.Handler
+		proto []string
 	}
 )
 
@@ -150,7 +148,7 @@ func (server *Server) ListenAndServeContext(ctx context.Context, services ...Ser
 		muxOpts = []runtime.ServeMuxOption{DefaultHeaderMatcher()}
 	}
 	gw := runtime.NewServeMux(muxOpts...)
-	router := mux.NewRouter()
+	mux := http.NewServeMux()
 
 	dialOpts := make([]grpc.DialOption, 0)
 	if isSecured {
@@ -177,28 +175,35 @@ func (server *Server) ListenAndServeContext(ctx context.Context, services ...Ser
 	if server.enableMetrics {
 		grpc_prometheus.Register(grpcServer)
 	}
-	// Attach handlers handlers by priority: internal, user provided, gRPC.
+	// Attach handlers by order: internal, HTTP handlers, gRPC.
 	server.routes = append([]route{
 		{
 			p: server.getHealthCheckPath(),
 			h: server.healthSrv,
-			m: []string{http.MethodGet},
 		},
 	}, server.routes...)
-	for _, r := range server.routes {
-		server.registerHTTPHandler(ctx, router, r)
-	}
-	// Serve gRPC and GW only and only if there is at least a service registered.
+	// Serve gRPC and GW only if there is a service registered.
 	if len(services) > 0 {
-		server.log.Context(ctx).Infof("server: registered gRPC+HTTP handler, path: %s", server.getAPIPrefix())
-		router.PathPrefix(server.getAPIPrefix()).Handler(gw)
+		server.routes = append(server.routes, route{
+			p:     server.getAPIPrefix(),
+			h:     gw,
+			proto: []string{"HTTP", "gRPC"},
+		})
+	}
+	for _, r := range server.routes {
+		proto := strings.Join(r.proto, "+")
+		if len(proto) == 0 {
+			proto = "HTTP"
+		}
+		server.log.Context(ctx).Infof("server: registered handler, path: %s, proto: %s", r.p, proto)
+		mux.Handle(r.p, r.h)
 	}
 
 	errChan := make(chan error, 1)
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, os.Kill, syscall.SIGTERM, syscall.SIGKILL)
 
-	handler := grpcHandlerFunc(isSecured, grpcServer, router)
+	handler := grpcHandlerFunc(isSecured, grpcServer, mux)
 	for i := len(server.httpInterceptors) - 1; i >= 0; i-- {
 		handler = server.httpInterceptors[i](handler)
 	}
@@ -323,19 +328,4 @@ func (server *Server) getLogger() log.Logger {
 		return log.Root()
 	}
 	return server.log
-}
-
-// registerHTTPHandler register the given  route to the given router.
-func (server *Server) registerHTTPHandler(ctx context.Context, router *mux.Router, r route) {
-	var route *mux.Route
-	if r.prefix {
-		route = router.PathPrefix(r.p).Handler(r.h)
-		server.log.Context(ctx).Infof("server: registered HTTP handler, path prefix: %s", r.p)
-	} else {
-		route = router.Path(r.p).Handler(r.h)
-		server.log.Context(ctx).Infof("server: registered HTTP handler, path: %s", r.p)
-	}
-	if len(r.m) > 0 {
-		route.Methods(r.m...)
-	}
 }
