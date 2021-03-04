@@ -1,0 +1,52 @@
+[
+    {
+        "path": "/users",
+        "method": ["delete"],
+        "response_code": 404,
+        "response_body": {
+            "code": 5
+        }
+    },
+    {
+        "path": "/users",
+        "method": ["get"],
+        "response_code": 200,
+        "response_body": "file://testdata/users.json"
+    },
+    {
+        "path": "/users/1",
+        "method": ["get"],
+        "response_code": 200,
+        "response_body": {
+            "id": "1",
+            "name": "jack",
+            "age": 22
+        }
+    },
+    {
+        "path": "/users/3",
+        "method": ["get"],
+        "response_code": 404,
+        "response_body": {
+            "code": 5
+        }
+    },
+    {
+        "path": "/users/1",
+        "method": ["delete"],
+        "header": {"authorization": "not_ok"},
+        "response_code": 401,
+        "response_body": {
+            "code": 16
+        }
+    },
+    {
+        "path": "/users/1",
+        "method": ["delete"],
+        "header": {"authorization": "ok"},
+        "response_code": 200,
+        "response_body": {
+            "code": 0
+        }
+    }
+]

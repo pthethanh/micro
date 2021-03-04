@@ -290,6 +290,8 @@ func AddressFromEnv() Option {
 // Longer patterns take precedence over shorter ones by default,
 // use RoutesPrioritization option to disable this rule.
 // See github.com/gorilla/mux for defining path with variables/patterns.
+//
+// Use HTTPPrefixHandler if you need to forward all requests to sub routers/handlers.
 func HTTPHandler(path string, h http.Handler, methods ...string) Option {
 	return func(opts *Server) {
 		opts.routes = append(opts.routes, route{p: path, h: h, m: methods})

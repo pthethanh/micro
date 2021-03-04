@@ -61,7 +61,6 @@ func TestWriteJSON(t *testing.T) {
 	if !status.IsInternal(s.Err()) {
 		t.Fatalf("got status=%v, want status is an internal error", s)
 	}
-	fmt.Println(s.Message())
 }
 
 func TestWriteError_Status(t *testing.T) {
