@@ -1,10 +1,7 @@
 package httputil
 
 import (
-	"crypto/md5"
-	"encoding/base64"
 	"encoding/json"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -75,27 +72,4 @@ func Mock(handlers ...MockHandler) http.Handler {
 		}
 	}
 	return r
-}
-
-func hashit(v interface{}) string {
-	if v == nil {
-		return ""
-	}
-	h := func(v interface{}) string {
-		h := md5.New()
-		b, err := json.Marshal(v)
-		if err != nil {
-			return ""
-		}
-		h.Write(b)
-		return base64.StdEncoding.EncodeToString(h.Sum(nil))
-	}
-	if rc, ok := v.(io.ReadCloser); ok {
-		var val interface{}
-		if err := json.NewDecoder(rc).Decode(&val); err != nil {
-			return ""
-		}
-		return h(val)
-	}
-	return h(v)
 }
