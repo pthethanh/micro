@@ -11,7 +11,19 @@
         "path": "/users",
         "method": ["get"],
         "response_code": 200,
+        "response_header": {"session_id": "123"},
         "response_body": "file://testdata/users.json"
+    },
+    {
+        "path": "/employees",
+        "method": ["get"],
+        "response_code": 404,
+        "response_body": "file://testdata/error.json"
+    },
+    {
+        "path": "/employees/1",
+        "method": ["get"],
+        "response_body": "file://testdata/not_found.json"
     },
     {
         "path": "/users/1",
@@ -44,6 +56,7 @@
         "path": "/users/1",
         "method": ["delete"],
         "header": {"authorization": "ok"},
+        "response_header": {"session_id": "123"},
         "response_code": 200,
         "response_body": {
             "code": 0

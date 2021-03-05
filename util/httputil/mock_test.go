@@ -11,12 +11,7 @@ import (
 )
 
 func TestMock(t *testing.T) {
-	handlers := httputil.MustReadMockHandlersFromFile("testdata/mock.json")
-	wantN := 6
-	if len(handlers) != wantN {
-		t.Fatalf("got number of spec = %d, want number of spec = %d", len(handlers), wantN)
-	}
-
+	handlers := httputil.MustReadMockFromFile("testdata/mock.json")
 	srv := httptest.NewServer(httputil.Mock(handlers...))
 	defer srv.Close()
 
@@ -33,7 +28,7 @@ func TestMock(t *testing.T) {
 		verify     func(body map[string]interface{}, t *testing.T)
 	}{
 		{
-			name:   "get users ok",
+			name:   "get users ok - data from file",
 			method: http.MethodGet,
 			path:   "/users",
 			code:   http.StatusOK,
@@ -51,6 +46,7 @@ func TestMock(t *testing.T) {
 					},
 				},
 			},
+			resHeaders: map[string]string{"session_id": "123"},
 			verify: func(body map[string]interface{}, t *testing.T) {
 				if v, ok := body["users"].([]interface{}); !ok || len(v) != 2 {
 					t.Errorf("got len(users)=%v, want len(users)=%v", len(v), 2)
@@ -64,6 +60,57 @@ func TestMock(t *testing.T) {
 			code:   http.StatusNotFound,
 			body: map[string]interface{}{
 				"code": 5,
+			},
+		},
+		{
+			name:   "get user detail ok",
+			method: http.MethodGet,
+			path:   "/users/1",
+			code:   http.StatusOK,
+			body: map[string]interface{}{
+				"id":   "1",
+				"name": "jack",
+				"age":  22,
+			},
+		},
+		{
+			name:    "delete users unauthorized - with header",
+			method:  http.MethodDelete,
+			path:    "/users/1",
+			code:    http.StatusUnauthorized,
+			headers: map[string]string{"authorization": "not_ok"},
+			body: map[string]interface{}{
+				"code": 16,
+			},
+		},
+		{
+			name:       "delete users ok with response header",
+			method:     http.MethodDelete,
+			path:       "/users/1",
+			code:       http.StatusOK,
+			headers:    map[string]string{"authorization": "ok"},
+			resHeaders: map[string]string{"session_id": "123"},
+			body: map[string]interface{}{
+				"code": 0,
+			},
+		},
+		{
+			name:   "get from file with response code",
+			method: http.MethodGet,
+			path:   "/employees",
+			code:   http.StatusNotFound,
+			body: map[string]interface{}{
+				"code":    5,
+				"message": "not found",
+			},
+		},
+		{
+			name:   "get from file - not found the file ",
+			method: http.MethodGet,
+			path:   "/employees/1",
+			code:   http.StatusNotFound,
+			body: map[string]interface{}{
+				"code": 2,
 			},
 		},
 	}
