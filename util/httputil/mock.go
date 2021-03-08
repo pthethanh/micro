@@ -16,16 +16,26 @@ const (
 )
 
 type (
+	// MockRequest hold HTTP mocks request specification.
+	MockRequest struct {
+		// Path can be a fixed string or a pattern. See more at github.com/gorilla/mux.
+		Path    string            `yaml:"path" json:"path"`
+		Methods []string          `yaml:"methods" json:"methods"`
+		Headers map[string]string `yaml:"headers" json:"headers"`
+	}
+
+	// MockResponse hold HTTP mocks response specification.
+	MockResponse struct {
+		Status  int               `yaml:"status" json:"status"`
+		Headers map[string]string `yaml:"headers" json:"headers"`
+		// Body can be a file using prefix file://path.
+		Body interface{} `yaml:"body" json:"body"`
+	}
+
 	// MockHandler hold HTTP mock specification.
 	MockHandler struct {
-		Path   string            `yaml:"path" json:"path"`
-		Method []string          `yaml:"method" json:"method"`
-		Header map[string]string `yaml:"header" json:"header"`
-
-		ResponseCode   int               `yaml:"response_code" json:"response_code"`
-		ResponseHeader map[string]string `yaml:"response_header" json:"response_header"`
-		// ResponseBody can be a file using file://path.
-		ResponseBody interface{} `yaml:"response_body" json:"response_body"`
+		Request  MockRequest  `yaml:"request" json:"request"`
+		Response MockResponse `yaml:"response" json:"response"`
 	}
 )
 
@@ -44,18 +54,18 @@ func MustReadMockFromFile(path string) []MockHandler {
 }
 
 // Mock provide a very simple way to mock a JSON HTTP handler base on path, method and header for testing.
-// Mock use sub-router definition hence it should be used with option server.HTTPPrefixHandler instead of server.HTTPHandler.
+// Mock use sub-router definition hence it should be used with option server.HTTPPrefixHandler.
 // NOTICE: Don't use this function for production since it's not optimized for performance.
 func Mock(handlers ...MockHandler) http.Handler {
 	r := mux.NewRouter()
 	for i := 0; i < len(handlers); i++ {
 		handler := handlers[i]
-		route := r.Path(handler.Path).HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			for k, v := range handler.ResponseHeader {
+		route := r.Path(handler.Request.Path).HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			for k, v := range handler.Response.Headers {
 				w.Header().Set(k, v)
 			}
 			// serve file if body is pointing to an external file.
-			if v, ok := handler.ResponseBody.(string); ok && strings.HasPrefix(v, filePrefix) {
+			if v, ok := handler.Response.Body.(string); ok && strings.HasPrefix(v, filePrefix) {
 				// it's user predefined path hence we don't call path.Clean here.
 				name := v[len(filePrefix):]
 				f, err := os.Open(name)
@@ -64,21 +74,21 @@ func Mock(handlers ...MockHandler) http.Handler {
 					return
 				}
 				defer f.Close()
-				w.WriteHeader(handler.ResponseCode)
+				w.WriteHeader(handler.Response.Status)
 				io.Copy(w, f)
 				return
 			}
-			WriteJSON(w, handler.ResponseCode, handler.ResponseBody)
+			WriteJSON(w, handler.Response.Status, handler.Response.Body)
 		})
-		if len(handler.Header) > 0 {
+		if len(handler.Request.Headers) > 0 {
 			headers := make([]string, 0)
-			for k, v := range handler.Header {
+			for k, v := range handler.Request.Headers {
 				headers = append(headers, k, v)
 			}
 			route.Headers(headers...)
 		}
-		if len(handler.Method) > 0 {
-			route.Methods(handler.Method...)
+		if len(handler.Request.Methods) > 0 {
+			route.Methods(handler.Request.Methods...)
 		}
 	}
 	return r
