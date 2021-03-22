@@ -42,8 +42,7 @@ func (s *service) RegisterWithEndpoint(ctx context.Context, mux *runtime.ServeMu
 func main() {
 	srv := &service{}
 	opts := []server.Option{
-		server.AddressFromEnv(),
-		server.APIPrefix("/api/"),
+		server.FromEnv(),
 		server.Web("/", "public", "index.html"),
 	}
 	if err := server.New(opts...).ListenAndServe(srv); err != nil {

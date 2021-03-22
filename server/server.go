@@ -40,7 +40,7 @@ type (
 		readTimeout          time.Duration
 		writeTimeout         time.Duration
 		shutdownTimeout      time.Duration
-		routes               []route
+		routes               []HandlerOptions
 		apiPrefix            string
 		httpInterceptors     []func(http.Handler) http.Handler
 		routesPrioritization bool
@@ -75,19 +75,14 @@ type (
 	EndpointService interface {
 		RegisterWithEndpoint(ctx context.Context, mux *runtime.ServeMux, addr string, opts []grpc.DialOption)
 	}
-
-	route struct {
-		p      string
-		h      http.Handler
-		m      []string
-		prefix bool
-	}
 )
 
 // New return new server with the given options.
 // If address is not set, default address ":8000" will be used.
 func New(ops ...Option) *Server {
-	server := &Server{}
+	server := &Server{
+		routesPrioritization: true,
+	}
 	for _, op := range ops {
 		op(server)
 	}
@@ -180,7 +175,7 @@ func (server *Server) ListenAndServeContext(ctx context.Context, services ...Ser
 		grpc_prometheus.Register(grpcServer)
 	}
 	// Add internal handlers.
-	server.routes = append([]route{
+	server.routes = append([]HandlerOptions{
 		{
 			p: server.getHealthCheckPath(),
 			h: server.healthSrv,
@@ -189,7 +184,7 @@ func (server *Server) ListenAndServeContext(ctx context.Context, services ...Ser
 	}, server.routes...)
 	// Serve gRPC and GW only and only if there is at least one service registered.
 	if len(services) > 0 {
-		server.routes = append(server.routes, route{p: server.getAPIPrefix(), h: gw, prefix: true})
+		server.routes = append(server.routes, HandlerOptions{p: server.getAPIPrefix(), h: gw, prefix: true})
 	}
 	// register all http handlers to the router.
 	server.registerHTTPHandlers(ctx, router)
@@ -255,7 +250,7 @@ func (server *Server) ListenAndServeContext(ctx context.Context, services ...Ser
 func grpcHandlerFunc(isSecured bool, grpcServer *grpc.Server, mux http.Handler) http.Handler {
 	if isSecured {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.ProtoMajor == 2 && strings.Contains(r.Header.Get("Content-Type"), "application/grpc") {
+			if isGRPCRequest(r) {
 				grpcServer.ServeHTTP(w, r)
 				return
 			}
@@ -264,7 +259,7 @@ func grpcHandlerFunc(isSecured bool, grpcServer *grpc.Server, mux http.Handler) 
 	}
 	// work-around in case TLS is disabled. See: https://github.com/grpc/grpc-go/issues/555
 	return h2c.NewHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.ProtoMajor == 2 && strings.Contains(r.Header.Get("Content-Type"), "application/grpc") {
+		if isGRPCRequest(r) {
 			grpcServer.ServeHTTP(w, r)
 		} else {
 			mux.ServeHTTP(w, r)
@@ -338,15 +333,29 @@ func (server *Server) registerHTTPHandlers(ctx context.Context, router *mux.Rout
 	}
 	for _, r := range server.routes {
 		var route *mux.Route
+		h := r.h
+		for _, interceptor := range r.interceptors {
+			h = interceptor(h)
+		}
 		if r.prefix {
-			route = router.PathPrefix(r.p).Handler(r.h)
+			route = router.PathPrefix(r.p).Handler(h)
 			server.log.Context(ctx).Infof("server: registered HTTP handler, path prefix: %s", r.p)
 		} else {
-			route = router.Path(r.p).Handler(r.h)
+			route = router.Path(r.p).Handler(h)
 			server.log.Context(ctx).Infof("server: registered HTTP handler, path: %s", r.p)
 		}
-		if len(r.m) > 0 {
+		if r.m != nil {
 			route.Methods(r.m...)
 		}
+		if r.q != nil {
+			route.Queries(r.q...)
+		}
+		if r.hdr != nil {
+			route.Headers(r.hdr...)
+		}
 	}
+}
+
+func isGRPCRequest(r *http.Request) bool {
+	return r.ProtoMajor == 2 && strings.Contains(r.Header.Get("Content-Type"), "application/grpc")
 }

@@ -66,7 +66,7 @@ func ExampleNew_withInternalHTTPAPI() {
 	})
 	srv := server.New(
 		server.FromEnv(),
-		server.HTTPHandler("/doc", h),
+		server.Handler("/doc", h),
 	)
 	if err := srv.ListenAndServe( /*services ...Service*/ ); err != nil {
 		panic(err)

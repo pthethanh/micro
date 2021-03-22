@@ -268,8 +268,7 @@ func HealthCheck(path string, srv health.Server) Option {
 
 // AddressFromEnv is an option allows user to set address using environment configuration.
 // It looks for PORT and then ADDRESS variables.
-// This option is mostly used for cloud environment like Heroku where the port
-// is randomly set.
+// This option is mostly used for cloud environment like Heroku where the port is randomly set.
 func AddressFromEnv() Option {
 	return func(opts *Server) {
 		if p := os.Getenv("PORT"); p != "" {
@@ -286,22 +285,37 @@ func AddressFromEnv() Option {
 	}
 }
 
-// HTTPHandler is an option allows user to add additional HTTP handlers.
+// Handler is an option allows user to add additional HTTP handlers.
 // Longer patterns take precedence over shorter ones by default,
 // use RoutesPrioritization option to disable this rule.
 // See github.com/gorilla/mux for defining path with variables/patterns.
 //
-// Use HTTPPrefixHandler if you need to forward all requests to sub routers/handlers.
-func HTTPHandler(path string, h http.Handler, methods ...string) Option {
-	return func(opts *Server) {
-		opts.routes = append(opts.routes, route{p: path, h: h, m: methods})
-	}
+// For more options, use HTTPHandlerX.
+func Handler(path string, h http.Handler, methods ...string) Option {
+	return HandlerWithOptions(path, h, NewHandlerOptions().Methods(methods...))
 }
 
-// HTTPPrefixHandler similar to HTTPHandler but matching by path prefix.
-func HTTPPrefixHandler(prefix string, h http.Handler, methods ...string) Option {
+// HandlerFunc is an option similar to HTTPHandler, but for http.HandlerFunc.
+func HandlerFunc(path string, h func(http.ResponseWriter, *http.Request), methods ...string) Option {
+	return HandlerWithOptions(path, http.HandlerFunc(h), NewHandlerOptions().Methods(methods...))
+}
+
+// PrefixHandler is an option to quickly define a prefix HTTP handler.
+// For more options, please use HTTPHandlerX.
+func PrefixHandler(path string, h http.Handler, methods ...string) Option {
+	return HandlerWithOptions(path, h, NewHandlerOptions().Prefix().Methods(methods...))
+}
+
+// HandlerWithOptions is an option to define full options such as method, query, header matchers
+// and interceptors for a HTTP handler.
+// Longer patterns take precedence over shorter ones by default,
+// use RoutesPrioritization option to disable this rule.
+// See github.com/gorilla/mux for defining path with variables/patterns.
+func HandlerWithOptions(path string, h http.Handler, hopt *HandlerOptions) Option {
 	return func(opts *Server) {
-		opts.routes = append(opts.routes, route{p: prefix, h: h, prefix: true, m: methods})
+		hopt.p = path
+		hopt.h = h
+		opts.routes = append(opts.routes, *hopt)
 	}
 }
 
@@ -313,8 +327,9 @@ func RoutesPrioritization(enable bool) Option {
 }
 
 // HTTPInterceptors is an option allows user to set additional interceptors to the root HTTP handler.
-// These interceptors are applied to both gRPC and HTTP requests of both public and internal APIs.
-func HTTPInterceptors(interceptors ...func(http.Handler) http.Handler) Option {
+// If interceptors are applied to gRPC, it is required that the interceptors don't hijack the response writer,
+// otherwise panic "Hijack not supported" will be thrown.
+func HTTPInterceptors(interceptors ...HTTPInterceptor) Option {
 	return func(opts *Server) {
 		opts.httpInterceptors = append(opts.httpInterceptors, interceptors...)
 	}
@@ -336,12 +351,10 @@ func Web(pathPrefix, dir, index string) Option {
 	if pathPrefix == "" {
 		pathPrefix = "/"
 	}
-	return func(opts *Server) {
-		HTTPPrefixHandler(pathPrefix, spaHandler{
-			index: index,
-			dir:   dir,
-		})(opts)
-	}
+	return PrefixHandler(pathPrefix, spaHandler{
+		index: index,
+		dir:   dir,
+	})
 }
 
 // Recovery is an option allows user to add an ability to recover a handler/API from a panic.
@@ -386,23 +399,23 @@ func CORS(allowCredential bool, headers, methods, origins []string) Option {
 // PProf is an option allows user to enable Go profiler.
 func PProf(pathPrefix string) Option {
 	return func(opts *Server) {
-		opts.routes = append(opts.routes, route{
+		opts.routes = append(opts.routes, HandlerOptions{
 			p: pathPrefix + "/debug/pprof/",
 			h: http.HandlerFunc(pprof.Index),
 		})
-		opts.routes = append(opts.routes, route{
+		opts.routes = append(opts.routes, HandlerOptions{
 			p: pathPrefix + "/debug/pprof/cmdline",
 			h: http.HandlerFunc(pprof.Cmdline),
 		})
-		opts.routes = append(opts.routes, route{
+		opts.routes = append(opts.routes, HandlerOptions{
 			p: pathPrefix + "/debug/pprof/profile",
 			h: http.HandlerFunc(pprof.Profile),
 		})
-		opts.routes = append(opts.routes, route{
+		opts.routes = append(opts.routes, HandlerOptions{
 			p: pathPrefix + "/debug/pprof/symbol",
 			h: http.HandlerFunc(pprof.Symbol),
 		})
-		opts.routes = append(opts.routes, route{
+		opts.routes = append(opts.routes, HandlerOptions{
 			p: pathPrefix + "/debug/pprof/trace",
 			h: http.HandlerFunc(pprof.Trace),
 		})
@@ -410,11 +423,17 @@ func PProf(pathPrefix string) Option {
 }
 
 // Metrics is an option to register standard Prometheus metrics for HTTP.
+// Default path is /internal/metrics.
 func Metrics(path string) Option {
 	return func(opts *Server) {
+		p := path
+		if p == "" {
+			p = "/internal/metrics"
+			opts.getLogger().Warnf("metrics path is switched automatically to %s", p)
+		}
 		opts.enableMetrics = true
-		opts.routes = append(opts.routes, route{
-			p: path,
+		opts.routes = append(opts.routes, HandlerOptions{
+			p: p,
 			h: promhttp.Handler(),
 			m: []string{http.MethodGet},
 		})
