@@ -328,31 +328,41 @@ func (server *Server) registerHTTPHandlers(ctx context.Context, router *mux.Rout
 			if v != 0 {
 				return v > 0
 			}
-			return strings.Compare(server.routes[i].p, server.routes[j].p) > 0
+			v = strings.Compare(server.routes[i].p, server.routes[j].p)
+			if v != 0 {
+				return v > 0
+			}
+			return len(server.routes[i].q) > len(server.routes[j].q)
 		})
 	}
 	for _, r := range server.routes {
 		var route *mux.Route
 		h := r.h
+		info := make([]interface{}, 0)
 		for _, interceptor := range r.interceptors {
 			h = interceptor(h)
 		}
 		if r.prefix {
 			route = router.PathPrefix(r.p).Handler(h)
-			server.log.Context(ctx).Infof("server: registered HTTP handler, path prefix: %s", r.p)
+			info = append(info, "path_prefix", r.p)
 		} else {
 			route = router.Path(r.p).Handler(h)
-			server.log.Context(ctx).Infof("server: registered HTTP handler, path: %s", r.p)
+			info = append(info, "path", r.p)
 		}
 		if r.m != nil {
 			route.Methods(r.m...)
+			info = append(info, "methods", r.m)
 		}
 		if r.q != nil {
 			route.Queries(r.q...)
+			info = append(info, "queries", r.q)
 		}
 		if r.hdr != nil {
 			route.Headers(r.hdr...)
+			info = append(info, "headers", r.hdr)
 		}
+		server.log.Context(ctx).Fields(info...).Infof("server: registered HTTP handler")
+
 	}
 }
 
