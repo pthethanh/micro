@@ -203,7 +203,6 @@ func (server *Server) ListenAndServeContext(ctx context.Context, services ...Ser
 		ReadTimeout:  server.readTimeout,
 		WriteTimeout: server.writeTimeout,
 	}
-
 	go func() {
 		if isSecured {
 			errChan <- httpServer.ServeTLS(server.lis, server.tlsCertFile, server.tlsKeyFile)
@@ -323,17 +322,7 @@ func (server *Server) getLogger() log.Logger {
 func (server *Server) registerHTTPHandlers(ctx context.Context, router *mux.Router) {
 	// Longer patterns take precedence over shorter ones.
 	if server.routesPrioritization {
-		sort.Slice(server.routes, func(i, j int) bool {
-			v := len(strings.Split(server.routes[i].p, "/")) - len(strings.Split(server.routes[j].p, "/"))
-			if v != 0 {
-				return v > 0
-			}
-			v = strings.Compare(server.routes[i].p, server.routes[j].p)
-			if v != 0 {
-				return v > 0
-			}
-			return len(server.routes[i].q) > len(server.routes[j].q)
-		})
+		sort.Sort(sort.Reverse(handlerOptionsSlice(server.routes)))
 	}
 	for _, r := range server.routes {
 		var route *mux.Route

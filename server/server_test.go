@@ -19,6 +19,7 @@ import (
 	"github.com/pthethanh/micro/server"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
+	"google.golang.org/grpc/test/grpc_testing"
 )
 
 var (
@@ -26,9 +27,26 @@ var (
 	mu    = &sync.Mutex{}
 )
 
-type (
-	validateHTTPResponseFunc = func(rs *http.Response) error
+const (
+	userName = "test"
 )
+
+type (
+	httpValidationFunc = func(rs *http.Response) error
+	testService        struct {
+		grpc_testing.UnimplementedTestServiceServer
+	}
+)
+
+func (srv *testService) UnaryCall(context.Context, *grpc_testing.SimpleRequest) (*grpc_testing.SimpleResponse, error) {
+	return &grpc_testing.SimpleResponse{
+		Username: userName,
+	}, nil
+}
+
+func (srv *testService) Register(s *grpc.Server) {
+	grpc_testing.RegisterTestServiceServer(s, srv)
+}
 
 func TestInitServerDefault(t *testing.T) {
 	t.Parallel()
@@ -71,7 +89,7 @@ func TestInitServerWithOptions(t *testing.T) {
 	}
 }
 
-func TestInitServerAPIs(t *testing.T) {
+func TestServerAPIs(t *testing.T) {
 	addr := availableAddress()
 	if addr == "" {
 		log.Warn("address is already in use, ignore unit test")
@@ -79,11 +97,19 @@ func TestInitServerAPIs(t *testing.T) {
 		return
 	}
 	os.Setenv("ADDRESS", addr)
-
+	os.Setenv("JWT_SECRET", "") // no auth
+	svc := &testService{}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	srv := server.New(
 		server.FromEnv(),
+		server.RoutesPrioritization(true),
+		server.PrefixHandler("/api/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte(`{"name":"api"}`))
+		})),
+		server.HandlerWithOptions("/api/v1/test", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte(`{"status":"ok"}`))
+		}), server.NewHandlerOptions().Methods(http.MethodGet).Queries("name", "status")),
 		server.Handler("/api/v1/test", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte(`{"name":"test"}`))
 		}), http.MethodGet),
@@ -91,17 +117,16 @@ func TestInitServerAPIs(t *testing.T) {
 			w.WriteHeader(http.StatusCreated)
 			w.Write([]byte(`{"status":"ok"}`))
 		}, http.MethodPost),
-		server.HandlerWithOptions("/api/v1/test", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte(`{"status":"ok"}`))
-		}), server.NewHandlerOptions().Methods(http.MethodGet).Queries("name", "status")),
 	)
 	go func() {
-		if err := srv.ListenAndServeContext(ctx); err != nil {
+		if err := srv.ListenAndServeContext(ctx, svc); err != nil {
 			if err != ctx.Err() {
 				t.Error(err)
 			}
 		}
 	}()
+	// wait for the server to start
+	time.Sleep(10 * time.Millisecond)
 	host := "http://localhost" + addr
 	cases := []struct {
 		name         string
@@ -129,7 +154,7 @@ func TestInitServerAPIs(t *testing.T) {
 			response_str: "grpc_server_handled_total",
 		},
 		{
-			name:   "handler",
+			name:   "handler, ok",
 			path:   "/api/v1/test",
 			method: http.MethodGet,
 			code:   http.StatusOK,
@@ -138,13 +163,7 @@ func TestInitServerAPIs(t *testing.T) {
 			},
 		},
 		{
-			name:   "handler wrong method",
-			path:   "/api/v1/test",
-			method: http.MethodPost,
-			code:   http.StatusNotFound,
-		},
-		{
-			name:   "handler func",
+			name:   "handler func, ok",
 			path:   "/api/v1/test1",
 			method: http.MethodPost,
 			code:   http.StatusCreated,
@@ -153,7 +172,7 @@ func TestInitServerAPIs(t *testing.T) {
 			},
 		},
 		{
-			name:   "handler with opts",
+			name:   "handler with opts, ok",
 			path:   "/api/v1/test?name=status",
 			method: http.MethodGet,
 			code:   http.StatusOK,
@@ -161,32 +180,61 @@ func TestInitServerAPIs(t *testing.T) {
 				"status": "ok",
 			},
 		},
+		{
+			name:   "handler with prefix works OK with route prioritization",
+			path:   "/api/v2/test",
+			method: http.MethodGet,
+			code:   http.StatusOK,
+			response_map: map[string]interface{}{
+				"name": "api",
+			},
+		},
+		{
+			name:   "handler, not found",
+			path:   "/v1/test",
+			method: http.MethodPost,
+			code:   http.StatusNotFound,
+		},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			var f validateHTTPResponseFunc
+			var f httpValidationFunc
 			if c.response_map != nil {
 				f = validateJSONResponse(c.response_map)
 			} else {
 				f = validateStringResponse(c.response_str)
 			}
-			if err := testRESTAPI(host+c.path, c.method, c.body, c.code, f); err != nil {
+			if err := testHTTP(host+c.path, c.method, c.body, c.code, f); err != nil {
 				t.Error(err)
 			}
 		})
 	}
 
+	// test grpc
+	conn, err := grpc.Dial(addr, grpc.WithInsecure())
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := grpc_testing.NewTestServiceClient(conn)
+	res, err := client.UnaryCall(context.Background(), &grpc_testing.SimpleRequest{
+		FillUsername: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Username != userName {
+		t.Errorf("got user_name=%s, want user_name=%s", res.Username, userName)
+	}
 }
 
-func validateJSONResponse(expectBody map[string]interface{}) func(rs *http.Response) error {
+func validateJSONResponse(expect map[string]interface{}) func(rs *http.Response) error {
 	return func(res *http.Response) error {
-		var resBody map[string]interface{}
-		if err := json.NewDecoder(res.Body).Decode(&resBody); err != nil {
+		var body map[string]interface{}
+		if err := json.NewDecoder(res.Body).Decode(&body); err != nil {
 			return err
 		}
-		fmt.Println(resBody)
-		for k, v := range expectBody {
-			v1 := resBody[k]
+		for k, v := range expect {
+			v1 := body[k]
 			if fmt.Sprintf("%v", v) != fmt.Sprintf("%v", v1) {
 				return fmt.Errorf("got response[%s]=%v, want response[%s]=%v", k, v1, k, v)
 			}
@@ -209,7 +257,7 @@ func validateStringResponse(sub string) func(rs *http.Response) error {
 	}
 }
 
-func testRESTAPI(path string, method string, body interface{}, expectCode int, f validateHTTPResponseFunc) error {
+func testHTTP(path string, method string, body interface{}, code int, f httpValidationFunc) error {
 	b, err := json.Marshal(body)
 	if err != nil {
 		return err
@@ -218,7 +266,7 @@ func testRESTAPI(path string, method string, body interface{}, expectCode int, f
 	if err != nil {
 		return err
 	}
-	c := http.Client{
+	c := &http.Client{
 		Timeout: time.Second,
 	}
 	res, err := c.Do(req)
@@ -226,8 +274,8 @@ func testRESTAPI(path string, method string, body interface{}, expectCode int, f
 		return err
 	}
 	defer res.Body.Close()
-	if res.StatusCode != expectCode {
-		return fmt.Errorf("got status_code=%d, want status_code=%d", res.StatusCode, expectCode)
+	if res.StatusCode != code {
+		return fmt.Errorf("got status_code=%d, want status_code=%d", res.StatusCode, code)
 	}
 	if err := f(res); err != nil {
 		return err

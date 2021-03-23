@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 type (
@@ -20,6 +21,8 @@ type (
 		prefix       bool
 		interceptors []HTTPInterceptor
 	}
+
+	handlerOptionsSlice []HandlerOptions
 
 	// HTTPInterceptor is an interceptor/middleware func.
 	HTTPInterceptor = func(http.Handler) http.Handler
@@ -67,6 +70,33 @@ func (r *HandlerOptions) Headers(headers ...string) *HandlerOptions {
 func (r *HandlerOptions) Interceptors(interceptors ...HTTPInterceptor) *HandlerOptions {
 	r.interceptors = interceptors
 	return r
+}
+
+func (p handlerOptionsSlice) Len() int { return len(p) }
+
+func (p handlerOptionsSlice) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
+
+func (p handlerOptionsSlice) Less(i, j int) bool {
+	if p[i].prefix && !p[j].prefix {
+		return true
+	}
+	v := len(strings.Split(p[i].p, "/")) - len(strings.Split(p[j].p, "/"))
+	if v != 0 {
+		return v < 0
+	}
+	v = strings.Compare(p[i].p, p[j].p)
+	if v != 0 {
+		return v < 0
+	}
+	v = len(p[i].m) - len(p[j].m)
+	if v != 0 {
+		return v < 0
+	}
+	v = len(p[i].q) - len(p[j].q)
+	if v != 0 {
+		return v < 0
+	}
+	return len(p[i].hdr)-len(p[j].hdr) < 0
 }
 
 // ServeHTTP inspects the URL path to locate a file within the static dir
