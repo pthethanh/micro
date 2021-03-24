@@ -3,79 +3,92 @@ package auth
 import (
 	"context"
 	"regexp"
+	"sync"
 )
 
 type (
 	// WhiteListAuthenticator is a special authenticator that support ignoring a list
-	// of methods that not required to be authenticated.
-	// Note the white list affects only when using with auth.UnaryInterceptor and auth.StreamInterceptor.
+	// of methods/paths during the authentication process.
 	WhiteListAuthenticator interface {
 		Authenticator
 
-		// IsWhiteListed tell the auth.UnaryInterceptor and auth.StreamInterceptor if they should ignore the authentication.
-		// the fullMethod is in form of gRPC generated code, i.e... /helloworld.Greeter/SayHello
-		IsWhiteListed(fullMethod string) bool
+		// IsWhiteListed tell the handler if a path should be ignored in the authentication process.
+		// For gRPC request the path will be fullMethod, i.e... /helloworld.Greeter/SayHello.
+		// For HTTP request the path will be URL.Path.
+		IsWhiteListed(path string) bool
 	}
 
-	// WhiteListMatchFunc is a function that used for matching whitelist item.
-	// Some common match funcs (but not limitted to):
-	// - strings.HasPrefix,
-	// - strings.HasSuffix
-	// - strings.Contains
-	// - strings.ContainsAny
-	// - strings.EqualFold
-	// - auth.WhiteListMatchFuncRegexp
-	// - auth.WhiteListMatchFuncExact
-	WhiteListMatchFunc = func(fullMethod, whiteListPattern string) bool
+	// WhiteListFunc is a function that used for matching whitelist item.
+	WhiteListFunc = func(path string) bool
 
 	// SimpleWhiteListAuthenticator is simple implementation of WhiteListAuthenticator.
 	SimpleWhiteListAuthenticator struct {
-		auth    Authenticator
-		wl      []string
-		matches []WhiteListMatchFunc
+		auth  Authenticator
+		funcs []WhiteListFunc
+		cache *sync.Map
 	}
 )
 
 // NewWhiteListAuthenticator return a new WhiteListAuthenticator.
-// If no matchFuncs is provided, default match func (exact match) will be used.
-func NewWhiteListAuthenticator(auth Authenticator, whitelist []string, matchFuncs ...WhiteListMatchFunc) SimpleWhiteListAuthenticator {
-	funcs := matchFuncs
-	if len(funcs) == 0 {
-		funcs = []WhiteListMatchFunc{WhiteListMatchFuncExact}
-	}
-	return SimpleWhiteListAuthenticator{
-		auth:    auth,
-		wl:      whitelist,
-		matches: funcs,
+func NewWhiteListAuthenticator(auth Authenticator, funcs ...WhiteListFunc) *SimpleWhiteListAuthenticator {
+	return &SimpleWhiteListAuthenticator{
+		auth:  auth,
+		funcs: funcs,
+		cache: &sync.Map{},
 	}
 }
 
 // Authenticate implements the Authenticator interface.
-func (a SimpleWhiteListAuthenticator) Authenticate(ctx context.Context) (context.Context, error) {
+func (a *SimpleWhiteListAuthenticator) Authenticate(ctx context.Context) (context.Context, error) {
 	return a.auth.Authenticate(ctx)
 }
 
 // IsWhiteListed implements WhitelistAuthenticator interface.
-func (a SimpleWhiteListAuthenticator) IsWhiteListed(fullMethod string) bool {
-	for _, p := range a.wl {
-		for _, f := range a.matches {
-			if f(fullMethod, p) {
-				return true
-			}
+func (a *SimpleWhiteListAuthenticator) IsWhiteListed(path string) bool {
+	// look at the cache first.
+	if v, ok := a.cache.Load(path); ok && v.(bool) {
+		return true
+	}
+	// check and update cache.
+	for _, f := range a.funcs {
+		if f(path) {
+			a.cache.Store(path, true)
+			return true
 		}
 	}
 	return false
 }
 
-// WhiteListMatchFuncRegexp is white list match func using regular expression.
-func WhiteListMatchFuncRegexp(m string, p string) bool {
-	if matched, err := regexp.MatchString(p, m); err == nil && matched {
-		return true
+// WhiteListRegexp is white func using regular expression.
+// This function panic if the regular expression failed to compile.
+func WhiteListRegexp(p string) WhiteListFunc {
+	reg, err := regexp.Compile(p)
+	if err != nil {
+		panic(err)
 	}
-	return false
+	return func(path string) bool {
+		if reg.Match([]byte(path)) {
+			return true
+		}
+		return false
+	}
 }
 
-// WhiteListMatchFuncExact is a simple white list match func using string comparison.
-func WhiteListMatchFuncExact(m string, p string) bool {
-	return p == m
+// WhiteListInList is a simple white list func simply compare the path with the given list.
+func WhiteListInList(wl ...string) WhiteListFunc {
+	return func(path string) bool {
+		for _, p := range wl {
+			if p == path {
+				return true
+			}
+		}
+		return false
+	}
+}
+
+// WhiteListNot is a helper function that simply reverse the inner white list func.
+func WhiteListNot(f WhiteListFunc) WhiteListFunc {
+	return func(path string) bool {
+		return !f(path)
+	}
 }

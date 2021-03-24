@@ -2,10 +2,12 @@ package auth
 
 import (
 	"context"
+	"net/http"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware/v2"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 )
 
 // StreamInterceptor returns a grpc.StreamServerInterceptor that performs
@@ -56,4 +58,54 @@ func UnaryInterceptor(auth Authenticator) grpc.UnaryServerInterceptor {
 		}
 		return handler(newCtx, req)
 	}
+}
+
+// HTTPInterceptor return a HTTP interceptor that perform an authentication check
+// for each request using the given authenticator.
+func HTTPInterceptor(a Authenticator) func(h http.Handler) http.Handler {
+	return func(h http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if wl, ok := a.(WhiteListAuthenticator); ok && wl.IsWhiteListed(r.URL.Path) {
+				h.ServeHTTP(w, r)
+				return
+			}
+			tok := tokenString(r.Context())
+			if tok == "" {
+				tok = r.Header.Get(AuthorizationMD)
+			}
+			if tok == "" {
+				t, err := r.Cookie(AuthorizationMD)
+				if err == nil {
+					tok = t.Value
+				}
+			}
+			md := metadata.MD{}
+			if v, ok := metadata.FromIncomingContext(r.Context()); ok {
+				md = v.Copy()
+			}
+			md.Set(AuthorizationMD, tok)
+			newCtx, err := a.Authenticate(metadata.NewIncomingContext(r.Context(), md))
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusUnauthorized)
+				return
+			}
+			h.ServeHTTP(w, r.WithContext(newCtx))
+		})
+	}
+}
+
+// tokenString extracts the JWT toke as a string from `ctx`.
+func tokenString(ctx context.Context) string {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return ""
+	}
+	slice, ok := md[AuthorizationMD]
+	if !ok || len(slice) == 0 {
+		return ""
+	}
+	if len(slice) > 1 {
+		return ""
+	}
+	return slice[0]
 }
