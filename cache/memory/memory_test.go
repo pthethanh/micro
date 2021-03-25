@@ -11,6 +11,8 @@ import (
 
 func TestCache(t *testing.T) {
 	var m cache.Cacher = memory.New()
+	m.Open(context.Background())
+	defer m.Close(context.Background())
 	if err := m.Set(context.Background(), "k", []byte("v")); err != nil {
 		t.Fatal(err)
 	}
@@ -25,6 +27,8 @@ func TestCache(t *testing.T) {
 
 func TestCacheTimeout(t *testing.T) {
 	var m cache.Cacher = memory.New()
+	m.Open(context.Background())
+	defer m.Close(context.Background())
 	// not ok
 	if err := m.Set(context.Background(), "k", []byte("v"), cache.TTL(500*time.Millisecond)); err != nil {
 		t.Fatal(err)
@@ -46,6 +50,8 @@ func TestCacheTimeout(t *testing.T) {
 
 func TestCacheDelete(t *testing.T) {
 	var m cache.Cacher = memory.New()
+	m.Open(context.Background())
+	defer m.Close(context.Background())
 	if err := m.Set(context.Background(), "k", []byte("v")); err != nil {
 		t.Fatal(err)
 	}

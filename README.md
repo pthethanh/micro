@@ -152,6 +152,7 @@ See [doc](https://pkg.go.dev/github.com/pthethanh/micro/auth?tab=doc) for  more 
 
 - Standard message broker interface.
 - Memory broker.
+- NATS plugin.
 - More plugins can be found here: https://github.com/pthethanh/micro-plugins/tree/main/broker
 
 See [doc](https://pkg.go.dev/github.com/pthethanh/micro/broker?tab=doc) for  more detail.
@@ -160,6 +161,7 @@ See [doc](https://pkg.go.dev/github.com/pthethanh/micro/broker?tab=doc) for  mor
 
 - Standard cache service interface.
 - Memory cache.
+- Redis plugin.
 - More plugins can be found here: https://github.com/pthethanh/micro-plugins/tree/main/cache
 
 See [doc](https://pkg.go.dev/github.com/pthethanh/micro/cache?tab=doc) for  more detail.
@@ -209,6 +211,8 @@ micro is inspired by [go-kit](https://github.com/go-kit/kit) and [go-micro](http
 go-kit is a good tool kit, but one of the thing I don't like go-kit is its over use of interface{} which cause a lot of unnecessary type conversions and some of other abstractions in the libraries which are not compatible with Go native libraries. Although go-kit is very flexible, it's a little bit hard to use for beginner/intermediate developers. It has a lot of options for developers to choose and hence hard to force everyone inside a company to use the same set of standards.
 
 go-micro is a great framework for microservices and very well designed. And it influences micro very much, but there are some coding styles that I don't like go-micro, that's why I made micro for myself.
+
+**Update**: go-micro is now moved to https://github.com/asim/go-micro and it's very well designed. I recommend trying it first to see if it fits your needs.
 
 ## Documentation
 

@@ -36,6 +36,10 @@ type (
 	}
 )
 
+var (
+	_ broker.Broker = &Broker{}
+)
+
 func init() {
 	rand.Seed(time.Now().UnixNano())
 }
@@ -76,12 +80,12 @@ func (sub *subscriber) Unsubscribe() error {
 }
 
 // Connect implements broker.Broker interface.
-func (br *Broker) Connect() error {
+func (br *Broker) Open(ctx context.Context) error {
 	return nil
 }
 
 // Publish implements broker.Broker interface.
-func (br *Broker) Publish(topic string, m *broker.Message, opts ...broker.PublishOption) error {
+func (br *Broker) Publish(ctx context.Context, topic string, m *broker.Message, opts ...broker.PublishOption) error {
 	br.mu.RLock()
 	subs := br.subs[topic]
 	br.mu.RUnlock()
@@ -108,7 +112,7 @@ func (br *Broker) Publish(topic string, m *broker.Message, opts ...broker.Publis
 }
 
 // Subscribe implements broker.Broker interface.
-func (br *Broker) Subscribe(topic string, h broker.Handler, opts ...broker.SubscribeOption) (broker.Subscriber, error) {
+func (br *Broker) Subscribe(ctx context.Context, topic string, h broker.Handler, opts ...broker.SubscribeOption) (broker.Subscriber, error) {
 	subOpts := &broker.SubscribeOptions{}
 	subOpts.Apply(opts...)
 	newSub := &subscriber{

@@ -13,6 +13,7 @@ type (
 	Memory struct {
 		values map[string]value
 		sync.RWMutex
+		exit chan struct{}
 	}
 	value struct {
 		val []byte
@@ -28,8 +29,8 @@ var (
 func New() *Memory {
 	m := &Memory{
 		values: make(map[string]value),
+		exit:   make(chan struct{}),
 	}
-	go m.clean()
 	return m
 }
 
@@ -78,14 +79,18 @@ func (m *Memory) clean() {
 	tik := time.NewTicker(500 * time.Millisecond)
 	defer tik.Stop()
 	for {
-		<-tik.C
-		m.Lock()
-		for k, v := range m.values {
-			if v.expired() {
-				delete(m.values, k)
+		select {
+		case <-tik.C:
+			m.Lock()
+			for k, v := range m.values {
+				if v.expired() {
+					delete(m.values, k)
+				}
 			}
+			m.Unlock()
+		case <-m.exit:
+			return
 		}
-		m.Unlock()
 	}
 }
 
@@ -94,4 +99,14 @@ func (v value) expired() bool {
 		return false
 	}
 	return time.Now().After(v.exp)
+}
+
+func (m *Memory) Open(ctx context.Context) error {
+	go m.clean()
+	return nil
+}
+
+func (m *Memory) Close(ctx context.Context) error {
+	close(m.exit)
+	return nil
 }

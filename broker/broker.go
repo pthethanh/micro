@@ -10,12 +10,14 @@ import (
 type (
 	// Broker is an interface used for asynchronous messaging.
 	Broker interface {
-		// Connect establish connect to the target server.
-		Connect() error
-		Publish(topic string, m *Message, opts ...PublishOption) error
-		Subscribe(topic string, h Handler, opts ...SubscribeOption) (Subscriber, error)
+		// Open establish connection to the target server.
+		Open(ctx context.Context) error
+		// Publish publish the message to the target topic.
+		Publish(ctx context.Context, topic string, m *Message, opts ...PublishOption) error
+		// Subscribe subscribe to the topic to consume messages.
+		Subscribe(ctx context.Context, topic string, h Handler, opts ...SubscribeOption) (Subscriber, error)
+		// HealthCheck return health check function for checking health.
 		HealthCheck() health.CheckFunc
-
 		// Close flush all in-flight messages and close underlying connection.
 		// Close allows a context to control the duration
 		// of a flush/close call. This context should be non-nil.
