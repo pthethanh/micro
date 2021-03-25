@@ -25,8 +25,7 @@ type (
 		t      string
 		h      broker.Handler
 		opts   *broker.SubscribeOptions
-		sub    chan struct{}
-		done   chan struct{}
+		close  func()
 		closed int32
 	}
 
@@ -74,13 +73,13 @@ func (sub *subscriber) Unsubscribe() error {
 	if atomic.AddInt32(&sub.closed, 1) > 1 {
 		return nil
 	}
-	close(sub.sub)
-	<-sub.done
+	sub.close()
 	return nil
 }
 
 // Connect implements broker.Broker interface.
 func (br *Broker) Open(ctx context.Context) error {
+	// do nothing.
 	return nil
 }
 
@@ -120,18 +119,12 @@ func (br *Broker) Subscribe(ctx context.Context, topic string, h broker.Handler,
 		t:    topic,
 		h:    h,
 		opts: subOpts,
-		sub:  make(chan struct{}, 0),
-		done: make(chan struct{}, 0),
 	}
-	ch := make(chan struct{}, 0)
-	defer func() { <-ch }()
-	go func() {
-		close(ch)
-		<-newSub.sub
+	newSub.close = func() {
 		br.mu.Lock()
 		defer br.mu.Unlock()
-		defer close(newSub.done)
 		subs := br.subs[topic]
+		// remove the sub
 		newSubs := make([]*subscriber, 0)
 		for _, sub := range subs {
 			if newSub.id == sub.id {
@@ -140,7 +133,7 @@ func (br *Broker) Subscribe(ctx context.Context, topic string, h broker.Handler,
 			newSubs = append(newSubs, sub)
 		}
 		br.subs[topic] = newSubs
-	}()
+	}
 	br.mu.Lock()
 	defer br.mu.Unlock()
 	br.subs[topic] = append(br.subs[topic], newSub)
@@ -150,11 +143,18 @@ func (br *Broker) Subscribe(ctx context.Context, topic string, h broker.Handler,
 // HealthCheck implements broker.Broker interface.
 func (br *Broker) HealthCheck() health.CheckFunc {
 	return func(ctx context.Context) error {
+		// do nothing.
 		return nil
 	}
 }
 
 // Close implements broker.Broker interface.
 func (br *Broker) Close(ctx context.Context) error {
+	// unsubscribe all subsribers.
+	for _, subs := range br.subs {
+		for _, sub := range subs {
+			sub.Unsubscribe()
+		}
+	}
 	return nil
 }

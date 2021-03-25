@@ -22,7 +22,7 @@ type (
 )
 
 var (
-	_ cache.Cacher = New()
+	_ cache.Cacher = &Memory{}
 )
 
 // New return new memory cache.
@@ -34,7 +34,7 @@ func New() *Memory {
 	return m
 }
 
-// Get a value
+// Get a value.
 func (m *Memory) Get(ctx context.Context, key string) ([]byte, error) {
 	m.RLock()
 	defer m.RUnlock()
@@ -51,7 +51,7 @@ func (m *Memory) Get(ctx context.Context, key string) ([]byte, error) {
 	return nil, cache.ErrNotFound
 }
 
-// Set a value
+// Set a value.
 func (m *Memory) Set(ctx context.Context, key string, val []byte, opts ...cache.SetOption) error {
 	m.Lock()
 	defer m.Unlock()
@@ -67,7 +67,7 @@ func (m *Memory) Set(ctx context.Context, key string, val []byte, opts ...cache.
 	return nil
 }
 
-// Delete a value
+// Delete a value.
 func (m *Memory) Delete(ctx context.Context, key string) error {
 	m.Lock()
 	defer m.Unlock()
@@ -101,11 +101,13 @@ func (v value) expired() bool {
 	return time.Now().After(v.exp)
 }
 
+// Open make the cacher ready for using.
 func (m *Memory) Open(ctx context.Context) error {
 	go m.clean()
 	return nil
 }
 
+// Close close underlying resources.
 func (m *Memory) Close(ctx context.Context) error {
 	close(m.exit)
 	return nil
