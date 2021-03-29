@@ -2,11 +2,13 @@ package auth
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware/v2"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -86,7 +88,7 @@ func HTTPInterceptor(a Authenticator) func(h http.Handler) http.Handler {
 			md.Set(AuthorizationMD, tok)
 			newCtx, err := a.Authenticate(metadata.NewIncomingContext(r.Context(), md))
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusUnauthorized)
+				http.Error(w, fmt.Sprintf(`{"code":%d,"message":"%s"}`, codes.Unauthenticated, err), http.StatusUnauthorized)
 				return
 			}
 			h.ServeHTTP(w, r.WithContext(newCtx))

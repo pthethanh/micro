@@ -59,16 +59,23 @@ func (a *SimpleWhiteListAuthenticator) IsWhiteListed(path string) bool {
 	return false
 }
 
-// WhiteListRegexp is white func using regular expression.
-// This function panic if the regular expression failed to compile.
-func WhiteListRegexp(p string) WhiteListFunc {
-	reg, err := regexp.Compile(p)
-	if err != nil {
-		panic(err)
+// WhiteListRegexp is white list function that ignore authentication process
+// for a request if its path matchs one of the provided regular expressions.
+// This function panic if the regular expressions failed to compile.
+func WhiteListRegexp(patterns ...string) WhiteListFunc {
+	regs := make([]*regexp.Regexp, 0)
+	for _, p := range patterns {
+		reg, err := regexp.Compile(p)
+		if err != nil {
+			panic(err)
+		}
+		regs = append(regs, reg)
 	}
 	return func(path string) bool {
-		if reg.Match([]byte(path)) {
-			return true
+		for _, reg := range regs {
+			if reg.Match([]byte(path)) {
+				return true
+			}
 		}
 		return false
 	}

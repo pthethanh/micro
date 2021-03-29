@@ -24,9 +24,13 @@ func WriteError(w http.ResponseWriter, code int, err error) {
 
 // WriteJSON write status and JSON data to http ResponseWriter.
 func WriteJSON(w http.ResponseWriter, code int, data interface{}) {
+	if err, ok := data.(error); ok {
+		WriteError(w, code, err)
+		return
+	}
 	b, err := json.Marshal(data)
 	if err != nil {
-		Write(w, "application/json", code, status.JSON(status.Internal("http: write json, err: %v", err)))
+		WriteError(w, code, status.Internal("http: write json, err: %v", err))
 		return
 	}
 	Write(w, "application/json", code, b)
