@@ -44,6 +44,7 @@ type (
 		apiPrefix            string
 		httpInterceptors     []func(http.Handler) http.Handler
 		routesPrioritization bool
+		notFoundHandler      http.Handler
 
 		serverOptions   []grpc.ServerOption
 		serveMuxOptions []runtime.ServeMuxOption
@@ -323,6 +324,9 @@ func (server *Server) registerHTTPHandlers(ctx context.Context, router *mux.Rout
 	// Longer patterns take precedence over shorter ones.
 	if server.routesPrioritization {
 		sort.Sort(sort.Reverse(handlerOptionsSlice(server.routes)))
+	}
+	if server.notFoundHandler != nil {
+		router.NotFoundHandler = server.notFoundHandler
 	}
 	for _, r := range server.routes {
 		var route *mux.Route

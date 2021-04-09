@@ -306,6 +306,13 @@ func PrefixHandler(path string, h http.Handler, methods ...string) Option {
 	return HandlerWithOptions(path, h, NewHandlerOptions().Prefix().Methods(methods...))
 }
 
+// NotFoundHandler is an option to provide a custom not found HTTP Handler.
+func NotFoundHandler(h http.Handler) Option {
+	return func(opts *Server) {
+		opts.notFoundHandler = h
+	}
+}
+
 // HandlerWithOptions is an option to define full options such as method, query, header matchers
 // and interceptors for a HTTP handler.
 // Longer patterns take precedence over shorter ones by default,
