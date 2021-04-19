@@ -28,6 +28,7 @@ type (
 )
 
 // NewRecorder start and return new recorder of the given execution context.
+// Additional metadata can be provided as key/value pairs.
 func NewRecorder(context string, meta ...interface{}) *Recorder {
 	r := &Recorder{
 		ctx:   context,
@@ -47,7 +48,8 @@ func NewRecorder(context string, meta ...interface{}) *Recorder {
 	return r
 }
 
-//Done record the execution time of the given span.
+// Done records the execution time of the given span since the last time Done was called.
+// Done updates the internal clock of the recorder.
 func (r *Recorder) Done(span string) {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
@@ -55,7 +57,21 @@ func (r *Recorder) Done(span string) {
 	r.t = time.Now()
 }
 
-// Info return time execution of the context and detail
+// Last return the last recorded time of the internal clock of the recorder.
+func (r *Recorder) Last() time.Time {
+	return r.t
+}
+
+// DoneSince records the execution time of the given span since the given time.
+// Note that DoneSince doesn't update the internal clock of the recorder.
+// Normally it is used in case there is a span run concurrently with others.
+func (r *Recorder) DoneSince(span string, t time.Time) {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+	r.m[span] = time.Since(t)
+}
+
+// Info return time execution info of the context and detail
 // of the recorded spans at the moment.
 func (r *Recorder) Info() Record {
 	r.mutex.Lock()
@@ -70,5 +86,5 @@ func (r *Recorder) Info() Record {
 
 // String return string value of the record.
 func (r Record) String() string {
-	return fmt.Sprintf("context:%s duration:%v spans: %v meta: %v", r.Context, r.Duration, r.Spans, r.Meta)
+	return fmt.Sprintf("context:%s, duration:%v, spans:%v, meta:%v", r.Context, r.Duration, r.Spans, r.Meta)
 }

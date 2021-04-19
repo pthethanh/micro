@@ -11,6 +11,11 @@ func TestRecorder(t *testing.T) {
 	r := timeutil.NewRecorder("get_users", "request_id", 123456789, "test_recorder")
 	time.Sleep(200 * time.Millisecond)
 	r.Done("validate")
+	last := r.Last()
+	go func() {
+		time.Sleep(100 * time.Millisecond)
+		r.DoneSince("concurrent", last)
+	}()
 	time.Sleep(100 * time.Millisecond)
 	r.Done("fetch_from_db")
 	time.Sleep(300 * time.Millisecond)
