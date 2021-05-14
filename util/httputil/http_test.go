@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -103,5 +104,44 @@ func TestWriteError_NormalError(t *testing.T) {
 	wantCode := fmt.Sprintf(`"code":%d`, codes.Unknown)
 	if !strings.Contains(rc.Body.String(), wantCode) {
 		t.Errorf("got err: %s, want err contains %s", rc.Body.String(), wantCode)
+	}
+}
+
+func TestDecodeQuery(t *testing.T) {
+	v := struct {
+		Name string
+		Age  uint
+	}{}
+	err := httputil.DecodeQuery(&v, url.Values{
+		"name": []string{"jack"},
+		"age":  []string{"22"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if v.Name != "jack" {
+		t.Errorf("got name=%s, want name=jack", v.Name)
+	}
+	if v.Age != 22 {
+		t.Errorf("got age=%d, want age=22", v.Age)
+	}
+}
+
+func TestEncodeQuery(t *testing.T) {
+	give := struct {
+		Name string `schema:"name"`
+		Age  uint   `schema:"age"`
+	}{
+		Name: "jack",
+		Age:  22,
+	}
+	got := url.Values{}
+	err := httputil.EncodeQuery(give, got)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "age=22&name=jack"
+	if got.Encode() != want {
+		t.Errorf("got query=%s, want query=%s", got.Encode(), want)
 	}
 }
