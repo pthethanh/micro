@@ -7,6 +7,7 @@ require (
 	github.com/go-playground/validator/v10 v10.6.1
 	github.com/golang/protobuf v1.5.2
 	github.com/google/uuid v1.2.0
+	github.com/googleapis/googleapis v0.0.0-20210521015204-95e75e5c62bb // indirect
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/schema v1.2.0

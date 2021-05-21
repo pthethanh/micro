@@ -94,32 +94,6 @@ func main() {
 
 See [doc](https://pkg.go.dev/github.com/pthethanh/micro/server?tab=doc) for more options.
 
-### Production template using microgen
-
-[microgen](github.com/pthethanh/microgen) is a deadly simple production ready project template generator for micro. You can use microgen to generate a project template that has:
-
-- Makefile with targets for:
-  - Build, format, test,...
-  - Protobuf installation.
-  - Generate code from proto definition for gRPC, gRPC Gateway, Swagger.
-  - Build & Run Docker, Docker Compose.
-  - Heroku deployment.
-- Standard REAME for production.
-- Sample proto definition & structure.
-- Github workflows.
-- Docker, Docker Compose.
-- Option for static web, Single Page Application.
-
-```shell
-// Install microgen
-go install github.com/pthethanh/microgen
-
-// Generate project template
-microgen -name usersrv -module github.com/pthethanh/usersrv -heroku_app_name usersrv
-
-// Find your code at $GOPATH/src/github.com/pthethanh/usersrv
-```
-
 ## Features
 
 Currently, micro supports following features:

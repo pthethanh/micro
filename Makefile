@@ -1,23 +1,21 @@
 PROJECT_NAME=micro
-BUILD_VERSION=$(shell cat VERSION)
 GO_BUILD_ENV=CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on
 GO_FILES=$(shell go list ./... | grep -v /vendor/)
 
-GRPC_GATEWAY_VERSION = $(shell go list -m -f '{{ .Version }}' github.com/grpc-ecosystem/grpc-gateway/v2)
+GOOGLE_APIS_PROTO_VERSION = $(shell go list -m -f '{{ .Version }}' github.com/googleapis/googleapis)
 PROTOC_VERSION = 3.10.1
 
 GOPATH ?= $(HOME)/go
 PROTO_OUT = $(GOPATH)/src
 MOD=$(GOPATH)/pkg/mod
-GRPC_GATEWAY_INCLUDES := $(MOD)/github.com/grpc-ecosystem/grpc-gateway/v2@$(GRPC_GATEWAY_VERSION)/third_party/googleapis
+GOOGLE_APIS_PROTO := $(MOD)/github.com/googleapis/googleapis@$(GOOGLE_APIS_PROTO_VERSION)
 PROTOC_INCLUDES := /usr/local/include
-PROTOC_GEN_GO = $(GOPATH)/bin/protoc-gen-go
-PROTOC_GEN_GRPC_GATEWAY = $(GOPATH)/bin/protoc-gen-grpc-gateway
 
+export PATH := $(GOPATH)/bin:$(PATH)
 
 .SILENT:
 
-all: fmt vet build test
+all: fmt vet test gen_proto
 
 vet:
 	$(GO_BUILD_ENV) go vet $(GO_FILES)
@@ -30,9 +28,6 @@ test:
 
 mod_tidy:
 	$(GO_BUILD_ENV) go mod tidy
-
-build:
-	$(GO_BUILD_ENV) go build -v  $(GO_FILES)
 
 gen_proto: gen_proto_broker gen_proto_examples
 
@@ -55,10 +50,10 @@ install_protobuf:
 	sudo chmod +x /usr/local/bin/protoc
 
 gen_proto_broker: install_tools
-	protoc -I $(PROTOC_INCLUDES) -I $(GRPC_GATEWAY_INCLUDES) -I ./broker/ --go_out $(PROTO_OUT) --go-grpc_out $(PROTO_OUT) broker/broker.proto
+	$(PROTOC_ENV) protoc -I $(PROTOC_INCLUDES) -I $(GOOGLE_APIS_PROTO) -I ./broker/ --go_out $(PROTO_OUT) --go-grpc_out $(PROTO_OUT) broker/broker.proto
 
 gen_proto_examples: install_tools
-	protoc -I $(PROTOC_INCLUDES) -I $(GRPC_GATEWAY_INCLUDES) -I ./examples/helloworld/helloworld \
+	$(PROTOC_ENV) protoc -I $(PROTOC_INCLUDES) -I $(GOOGLE_APIS_PROTO) -I ./examples/helloworld/helloworld \
 	 --go_out $(PROTO_OUT) \
 	 --go-grpc_out $(PROTO_OUT) \
 	 --grpc-gateway_out $(PROTO_OUT) \

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/gorilla/schema"
 	"github.com/pthethanh/micro/status"
 )
 
@@ -35,21 +34,4 @@ func WriteJSON(w http.ResponseWriter, code int, data interface{}) {
 		return
 	}
 	Write(w, "application/json", code, b)
-}
-
-// DecodeQuery decodes a map[string][]string to a struct.
-//
-// The first parameter must be a pointer to a struct.
-//
-// The second parameter is a map, typically url.Values from an HTTP request.
-// Keys are "paths" in dotted notation to the struct fields and nested structs.
-func DecodeQuery(dst interface{}, src map[string][]string) error {
-	return schema.NewDecoder().Decode(dst, src)
-}
-
-// Encode encodes a struct into map[string][]string.
-//
-// Intended for use with url.Values.
-func EncodeQuery(src interface{}, dst map[string][]string) error {
-	return schema.NewEncoder().Encode(src, dst)
 }
