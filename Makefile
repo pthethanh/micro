@@ -11,11 +11,11 @@ MOD=$(GOPATH)/pkg/mod
 GOOGLE_APIS_PROTO := $(MOD)/github.com/googleapis/googleapis@$(GOOGLE_APIS_PROTO_VERSION)
 PROTOC_INCLUDES := /usr/local/include
 
-#export PATH := $(GOPATH)/bin:$(PATH)
+export PATH := $(GOPATH)/bin:$(PATH)
 
 .SILENT:
 
-all: fmt vet test gen_proto
+all: fmt vet test
 
 vet:
 	$(GO_BUILD_ENV) go vet $(GO_FILES)
