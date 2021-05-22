@@ -3,18 +3,20 @@ package httputil
 import "github.com/gorilla/schema"
 
 const (
-	DefaultQueryTag = "query"
+	defaultQueryTag = "query"
 )
 
 type (
+	// QueryEncoder is a query param encoder.
 	QueryEncoder = schema.Encoder
+	// QueryDecoder is a query param decoder.
 	QueryDecoder = schema.Decoder
 )
 
 // NewQueryDecoder return new query decoder using the given tag.
 func NewQueryDecoder(tag string) *QueryDecoder {
 	if tag == "" {
-		tag = DefaultQueryTag
+		tag = defaultQueryTag
 	}
 	dc := schema.NewDecoder()
 	dc.SetAliasTag(tag)
@@ -24,7 +26,7 @@ func NewQueryDecoder(tag string) *QueryDecoder {
 // NewQueryEncoder return new query encoder using the given tag.
 func NewQueryEncoder(tag string) *QueryEncoder {
 	if tag == "" {
-		tag = DefaultQueryTag
+		tag = defaultQueryTag
 	}
 	ec := schema.NewEncoder()
 	ec.SetAliasTag(tag)
@@ -39,17 +41,17 @@ func NewQueryEncoder(tag string) *QueryEncoder {
 // Keys are "paths" in dotted notation to the struct fields and nested structs.
 func DecodeQuery(dst interface{}, src map[string][]string) error {
 	dc := schema.NewDecoder()
-	dc.SetAliasTag(DefaultQueryTag)
+	dc.SetAliasTag(defaultQueryTag)
 	dc.IgnoreUnknownKeys(true)
 	dc.ZeroEmpty(false)
 	return dc.Decode(dst, src)
 }
 
-// Encode encodes a struct into map[string][]string.
+// EncodeQuery encodes a struct into map[string][]string.
 //
 // Intended for use with url.Values.
 func EncodeQuery(src interface{}, dst map[string][]string) error {
 	ec := schema.NewEncoder()
-	ec.SetAliasTag(DefaultQueryTag)
+	ec.SetAliasTag(defaultQueryTag)
 	return ec.Encode(src, dst)
 }

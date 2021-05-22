@@ -77,7 +77,7 @@ func (sub *subscriber) Unsubscribe() error {
 	return nil
 }
 
-// Connect implements broker.Broker interface.
+// Open implements broker.Broker interface.
 func (br *Broker) Open(ctx context.Context) error {
 	// do nothing.
 	return nil
@@ -89,7 +89,7 @@ func (br *Broker) Publish(ctx context.Context, topic string, m *broker.Message, 
 	subs := br.subs[topic]
 	br.mu.RUnlock()
 	// queue, list of sub
-	queueSubs := make(map[string][]*subscriber, 0)
+	queueSubs := make(map[string][]*subscriber)
 	env := &event{
 		t:   topic,
 		msg: m,

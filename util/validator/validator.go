@@ -31,7 +31,7 @@ func ValidatePartial(v interface{}, fields ...string) error {
 	return New().StructPartial(v, fields...)
 }
 
-// ValidatePartial validates all the fields except the given fields.
+// ValidateExcept validates all the fields except the given fields.
 func ValidateExcept(v interface{}, fields ...string) error {
 	return New().StructExcept(v, fields...)
 }
