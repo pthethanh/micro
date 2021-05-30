@@ -344,14 +344,26 @@ func HTTPStatusFromCode(code Code) int {
 	return http.StatusInternalServerError
 }
 
-// JSON return JSON encoded of the given error.
-func JSON(err error) []byte {
-	b, mErr := json.Marshal(Convert(err).Proto())
-	if mErr != nil {
-		log.Errorf("errors: marshall error, err: %v", mErr)
-		return []byte(fmt.Sprintf(`{"code":%d, "message":"%s"}`, codes.Internal, codes.Internal.String()))
+// JSON return JSON encoded of the given error or status.
+func JSON(v interface{}) []byte {
+	marshal := func(target interface{}) []byte {
+		b, err := json.Marshal(target)
+		if err != nil {
+			log.Errorf("errors: marshall error, err: %v", err)
+			return []byte(fmt.Sprintf(`{"code":%d, "message":"%s"}`, codes.Internal, codes.Internal.String()))
+		}
+		return b
 	}
-	return b
+	if err, ok := v.(error); ok {
+		return marshal(Convert(err).Proto())
+	}
+	if s, ok := v.(*Status); ok {
+		return marshal(s.Proto())
+	}
+	if s, ok := v.(Status); ok {
+		return marshal(s.Proto())
+	}
+	return marshal(v)
 }
 
 // Parse try to parse the given data to a Status.
