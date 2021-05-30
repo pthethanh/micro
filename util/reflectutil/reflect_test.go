@@ -9,7 +9,8 @@ import (
 
 func TestTagsToStructFields(t *testing.T) {
 	type Note struct {
-		Value string `json:"value,omitempty"`
+		private string
+		Value   string `json:"value,omitempty"`
 	}
 	type Address struct {
 		Work string `json:"work,omitempty"`
@@ -38,8 +39,8 @@ func TestTagsToStructFields(t *testing.T) {
 			want:  []string{"Name", "Age", "Address1.Work", "Address2.Note.Value"},
 		},
 		{
-			name:  "all fields - nil",
-			value: v,
+			name:  "pointer, all fields - nil",
+			value: &v,
 			tags:  nil,
 			want:  []string{"Name", "Age", "Address1.Note", "Address2", "Address2.Work", "Address2.Home", "Address2.Note.Value", "Address1", "Address1.Work", "Address1.Home", "Address1.Note.Value", "Address2.Note"},
 		},
@@ -81,7 +82,8 @@ func TestTagsToStructFields(t *testing.T) {
 
 func TestTagsToTags(t *testing.T) {
 	type Note struct {
-		Value string `json:"value,omitempty" bson:"bvalue,omitempty"`
+		private string
+		Value   string `json:"value,omitempty" bson:"bvalue,omitempty"`
 	}
 	type Address struct {
 		Work string `json:"work,omitempty" bson:"bwork,omitempty"`
@@ -114,8 +116,8 @@ func TestTagsToTags(t *testing.T) {
 			want:  []string{"bname", "bage", "baddress1.bwork", "baddress2.bnote.bvalue"},
 		},
 		{
-			name:  "all fields - nil",
-			value: v,
+			name:  "pointer, all fields - nil",
+			value: &v,
 			tags:  nil,
 			want:  []string{"bname", "bage", "baddress1.bnote", "baddress2", "baddress2.bwork", "baddress2.bhome", "baddress2.bnote.bvalue", "baddress1", "baddress1.bwork", "baddress1.bhome", "baddress1.bnote.bvalue", "baddress2.bnote"},
 		},
@@ -143,16 +145,94 @@ func TestTagsToTags(t *testing.T) {
 				TagValues:   c.tags,
 			})
 			if len(got) != len(c.want) {
-				t.Errorf("got fields=%s, want fields=%s", got, c.want)
+				t.Errorf("got tags=%s, want tags=%s", got, c.want)
 			}
 			sort.Strings(got)
 			sort.Strings(c.want)
 			for i := 0; i < len(got); i++ {
 				if got[i] != c.want[i] {
-					t.Errorf("got fields=%s, want fields=%s", got, c.want)
+					t.Errorf("got tags=%s, want tags=%s", got, c.want)
 					return
 				}
 			}
 		})
+	}
+}
+
+func TestTagsToFieldNamesNilValues(t *testing.T) {
+	type Address struct {
+		Home string `json:"home"`
+		Work string `json:"work"`
+	}
+	v := struct {
+		Name    *string  `json:"name"`
+		Address *Address `json:"address"`
+	}{
+		// all nil
+	}
+	got := reflectutil.GetFieldNamesFromTags(reflectutil.GetFieldNamesFromTagsRequest{
+		Value:        &v,
+		Tag:          "json",
+		ResolverFunc: reflectutil.JSONTagResolverFunc,
+		TagValues:    []string{"name", "address", "address.home", "address.work"},
+	})
+	want := []string{"Name", "Address"}
+	if len(got) != len(want) {
+		t.Fatalf("got fields=%s, want fields=%s", got, want)
+	}
+	sort.Strings(got)
+	sort.Strings(want)
+	for i := 0; i < len(got); i++ {
+		if got[i] != want[i] {
+			t.Errorf("got fields=%s, want fields=%s", got, want)
+			return
+		}
+	}
+
+	// pass nil value
+	got = reflectutil.GetFieldNamesFromTags(reflectutil.GetFieldNamesFromTagsRequest{
+		Value: nil,
+	})
+	if len(got) != 0 {
+		t.Fatalf("pass nil value, got fields=%v, want fields=nil", got)
+	}
+}
+
+func TestTagsToTagsNilValues(t *testing.T) {
+	type Address struct {
+		Home string `json:"home" bson:"bhome"`
+		Work string `json:"work" bson:"bwork"`
+	}
+	v := struct {
+		Name    *string  `json:"name" bson:"bname"`
+		Address *Address `json:"address" bson:"baddress"`
+	}{
+		// all nil
+	}
+	got := reflectutil.GetTagsFromTags(reflectutil.GetTagsFromTagsRequest{
+		Value:       &v,
+		SrcTag:      "json",
+		SrcResolver: reflectutil.JSONTagResolverFunc,
+		DstTag:      "bson",
+		DstResolver: reflectutil.FirstValueTagResolverFunc,
+		TagValues:   []string{"name", "address", "address.home", "address.work"},
+	})
+	want := []string{"bname", "baddress"}
+	if len(got) != len(want) {
+		t.Fatalf("got tags=%s, want tags=%s", got, want)
+	}
+	sort.Strings(got)
+	sort.Strings(want)
+	for i := 0; i < len(got); i++ {
+		if got[i] != want[i] {
+			t.Errorf("got tags=%s, want tags=%s", got, want)
+			return
+		}
+	}
+
+	// pass nil val
+	got = reflectutil.GetTagsFromTags(reflectutil.GetTagsFromTagsRequest{})
+	if len(got) != 0 {
+		t.Fatalf("pass nil value, got tags=%v, want tags=nil", got)
 	}
 }
