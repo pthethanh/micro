@@ -9,18 +9,18 @@ import (
 
 func TestTagsToStructFields(t *testing.T) {
 	type Note struct {
-		Value string `json:"value"`
+		Value string `json:"value,omitempty"`
 	}
 	type Address struct {
-		Work string `json:"work"`
-		Home string `json:"home"`
-		Note Note   `json:"note"`
+		Work string `json:"work,omitempty"`
+		Home string `json:"home,omitempty"`
+		Note Note   `json:"note,omitempty"`
 	}
 	v := struct {
-		Name     string   `json:"name"`
-		Age      int      `json:"age"`
-		Address1 Address  `json:"address1"`
-		Address2 *Address `json:"address2"`
+		Name     string   `json:"name,omitempty"`
+		Age      int      `json:"age,omitempty"`
+		Address1 Address  `json:"address1,omitempty"`
+		Address2 *Address `json:"address2,omitempty"`
 	}{
 		Address2: &Address{},
 	}
@@ -58,7 +58,12 @@ func TestTagsToStructFields(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			got := reflectutil.GetFieldNamesFromTags(c.value, "json", c.tags...)
+			got := reflectutil.GetFieldNamesFromTags(reflectutil.GetFieldNamesFromTagsRequest{
+				Value:        c.value,
+				Tag:          "json",
+				ResolverFunc: reflectutil.JSONTagResolverFunc,
+				TagValues:    c.tags,
+			})
 			if len(got) != len(c.want) {
 				t.Errorf("got fields=%s, want fields=%s", got, c.want)
 			}
@@ -76,18 +81,18 @@ func TestTagsToStructFields(t *testing.T) {
 
 func TestTagsToTags(t *testing.T) {
 	type Note struct {
-		Value string `json:"value" bson:"bvalue"`
+		Value string `json:"value,omitempty" bson:"bvalue,omitempty"`
 	}
 	type Address struct {
-		Work string `json:"work" bson:"bwork"`
-		Home string `json:"home" bson:"bhome"`
-		Note Note   `json:"note" bson:"bnote"`
+		Work string `json:"work,omitempty" bson:"bwork,omitempty"`
+		Home string `json:"home,omitempty" bson:"bhome,omitempty"`
+		Note Note   `json:"note,omitempty" bson:"bnote,omitempty"`
 	}
 	v := struct {
-		Name     string   `json:"name" bson:"bname"`
-		Age      int      `json:"age" bson:"bage"`
-		Address1 Address  `json:"address1" bson:"baddress1"`
-		Address2 *Address `json:"address2" bson:"baddress2"`
+		Name     string   `json:"name,omitempty" bson:"bname,omitempty"`
+		Age      int      `json:"age,omitempty" bson:"bage,omitempty"`
+		Address1 Address  `json:"address1,omitempty" bson:"baddress1,omitempty"`
+		Address2 *Address `json:"address2,omitempty" bson:"baddress2,omitempty"`
 	}{
 		Address2: &Address{},
 	}
@@ -129,7 +134,14 @@ func TestTagsToTags(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			got := reflectutil.GetTagsFromTags(c.value, "json", "bson", c.tags...)
+			got := reflectutil.GetTagsFromTags(reflectutil.GetTagsFromTagsRequest{
+				Value:       c.value,
+				SrcTag:      "json",
+				SrcResolver: reflectutil.JSONTagResolverFunc,
+				DstTag:      "bson",
+				DstResolver: reflectutil.FirstValueTagResolverFunc,
+				TagValues:   c.tags,
+			})
 			if len(got) != len(c.want) {
 				t.Errorf("got fields=%s, want fields=%s", got, c.want)
 			}

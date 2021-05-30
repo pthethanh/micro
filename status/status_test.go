@@ -160,7 +160,7 @@ func TestHTTPStatusCodeCovert(t *testing.T) {
 		},
 	}
 	for _, c := range cases {
-		t.Run(fmt.Sprintf("%s", c.give.String()), func(t *testing.T) {
+		t.Run(c.give.String(), func(t *testing.T) {
 			if s := status.HTTPStatusFromCode(c.give); s != c.want {
 				t.Errorf("got status=%d, want status=%d", s, c.want)
 			}
