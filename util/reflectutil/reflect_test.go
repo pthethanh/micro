@@ -60,10 +60,10 @@ func TestTagsToStructFields(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			got := reflectutil.GetFieldNamesFromTags(reflectutil.GetFieldNamesFromTagsRequest{
-				Value:        c.value,
-				Tag:          "json",
-				ResolverFunc: reflectutil.JSONTagResolverFunc,
-				TagValues:    c.tags,
+				Value:     c.value,
+				Tag:       "json",
+				Resolver:  reflectutil.JSONTagResolverFunc,
+				TagValues: c.tags,
 			})
 			if len(got) != len(c.want) {
 				t.Errorf("got fields=%s, want fields=%s", got, c.want)
@@ -171,10 +171,10 @@ func TestTagsToFieldNamesNilValues(t *testing.T) {
 		// all nil
 	}
 	got := reflectutil.GetFieldNamesFromTags(reflectutil.GetFieldNamesFromTagsRequest{
-		Value:        &v,
-		Tag:          "json",
-		ResolverFunc: reflectutil.JSONTagResolverFunc,
-		TagValues:    []string{"name", "address", "address.home", "address.work"},
+		Value:     &v,
+		Tag:       "json",
+		Resolver:  reflectutil.JSONTagResolverFunc,
+		TagValues: []string{"name", "address", "address.home", "address.work"},
 	})
 	want := []string{"Name", "Address"}
 	if len(got) != len(want) {

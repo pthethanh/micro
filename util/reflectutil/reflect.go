@@ -14,10 +14,10 @@ type (
 	// GetFieldNamesFromTagsRequest hold request information
 	// for getting field names from tags' values.
 	GetFieldNamesFromTagsRequest struct {
-		Value        interface{}
-		Tag          string
-		ResolverFunc TagResolverFunc
-		TagValues    []string
+		Value     interface{}
+		Tag       string
+		Resolver  TagResolverFunc
+		TagValues []string
 	}
 
 	// GetTagsFromTagsRequest hold request information
@@ -64,10 +64,10 @@ func GetFieldNamesFromTags(req GetFieldNamesFromTagsRequest) []string {
 		return nil
 	}
 	m := make(map[string]string)
-	if req.ResolverFunc == nil {
-		req.ResolverFunc = DefaultTagResolverFunc
+	if req.Resolver == nil {
+		req.Resolver = DefaultTagResolverFunc
 	}
-	tagsToFieldNames(m, req.Value, "", "", req.Tag, req.ResolverFunc)
+	tagsToFieldNames(m, req.Value, "", "", req.Tag, req.Resolver)
 	addAll := len(req.TagValues) == 0 || req.TagValues[0] == "*"
 	rs := make([]string, 0)
 	if addAll {
