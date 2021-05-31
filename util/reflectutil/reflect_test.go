@@ -22,6 +22,7 @@ func TestTagsToStructFields(t *testing.T) {
 		Age      int      `json:"age,omitempty"`
 		Address1 Address  `json:"address1,omitempty"`
 		Address2 *Address `json:"address2,omitempty"`
+		Chan     chan int
 	}{
 		Address2: &Address{},
 	}
@@ -42,13 +43,13 @@ func TestTagsToStructFields(t *testing.T) {
 			name:  "pointer, all fields - nil",
 			value: &v,
 			tags:  nil,
-			want:  []string{"Name", "Age", "Address1.Note", "Address2", "Address2.Work", "Address2.Home", "Address2.Note.Value", "Address1", "Address1.Work", "Address1.Home", "Address1.Note.Value", "Address2.Note"},
+			want:  []string{"Name", "Age", "Address1.Note", "Address2", "Address2.Work", "Address2.Home", "Address2.Note.Value", "Address1", "Address1.Work", "Address1.Home", "Address1.Note.Value", "Address2.Note", "Chan"},
 		},
 		{
 			name:  "all fields - *",
 			value: v,
 			tags:  []string{"*"},
-			want:  []string{"Name", "Age", "Address1.Note", "Address2", "Address2.Work", "Address2.Home", "Address2.Note.Value", "Address1", "Address1.Work", "Address1.Home", "Address1.Note.Value", "Address2.Note"},
+			want:  []string{"Name", "Age", "Address1.Note", "Address2", "Address2.Work", "Address2.Home", "Address2.Note.Value", "Address1", "Address1.Work", "Address1.Home", "Address1.Note.Value", "Address2.Note", "Chan"},
 		},
 		{
 			name:  "non-struct value",
@@ -95,6 +96,7 @@ func TestTagsToTags(t *testing.T) {
 		Age      int      `json:"age,omitempty" bson:"bage,omitempty"`
 		Address1 Address  `json:"address1,omitempty" bson:"baddress1,omitempty"`
 		Address2 *Address `json:"address2,omitempty" bson:"baddress2,omitempty"`
+		Chan     int
 	}{
 		Address2: &Address{},
 	}
@@ -108,24 +110,24 @@ func TestTagsToTags(t *testing.T) {
 		want  []string
 	}{
 		{
-			name:  "some fields different levels",
+			name:  "some fields different levels with and without tag",
 			value: v,
 			src:   "json",
 			dst:   "bson",
-			tags:  []string{"name", "age", "address1.work", "address2.note.value"},
-			want:  []string{"bname", "bage", "baddress1.bwork", "baddress2.bnote.bvalue"},
+			tags:  []string{"name", "age", "address1.work", "address2.note.value", "Chan"},
+			want:  []string{"bname", "bage", "baddress1.bwork", "baddress2.bnote.bvalue", "Chan"},
 		},
 		{
 			name:  "pointer, all fields - nil",
 			value: &v,
 			tags:  nil,
-			want:  []string{"bname", "bage", "baddress1.bnote", "baddress2", "baddress2.bwork", "baddress2.bhome", "baddress2.bnote.bvalue", "baddress1", "baddress1.bwork", "baddress1.bhome", "baddress1.bnote.bvalue", "baddress2.bnote"},
+			want:  []string{"bname", "bage", "baddress1.bnote", "baddress2", "baddress2.bwork", "baddress2.bhome", "baddress2.bnote.bvalue", "baddress1", "baddress1.bwork", "baddress1.bhome", "baddress1.bnote.bvalue", "baddress2.bnote", "Chan"},
 		},
 		{
 			name:  "all fields - *",
 			value: v,
 			tags:  []string{"*"},
-			want:  []string{"bname", "bage", "baddress1.bnote", "baddress2", "baddress2.bwork", "baddress2.bhome", "baddress2.bnote.bvalue", "baddress1", "baddress1.bwork", "baddress1.bhome", "baddress1.bnote.bvalue", "baddress2.bnote"},
+			want:  []string{"bname", "bage", "baddress1.bnote", "baddress2", "baddress2.bwork", "baddress2.bhome", "baddress2.bnote.bvalue", "baddress1", "baddress1.bwork", "baddress1.bhome", "baddress1.bnote.bvalue", "baddress2.bnote", "Chan"},
 		},
 		{
 			name:  "non-struct value",

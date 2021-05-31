@@ -138,7 +138,11 @@ func tagsToFieldNames(res map[string]string, req interface{}, namePrefix string,
 		if fv.Kind() == reflect.Ptr {
 			fv = fv.Elem()
 		}
-		tagValue := tagPrefix + resolver(t.Field(i).Tag.Get(tag))
+		tagValue := resolver(t.Field(i).Tag.Get(tag))
+		if tagValue == "" {
+			tagValue = t.Field(i).Name
+		}
+		tagValue = tagPrefix + tagValue
 		nameValue := namePrefix + t.Field(i).Name
 		res[tagValue] = nameValue
 		if fv.Kind() == reflect.Struct {
@@ -174,8 +178,16 @@ func tagsToTags(res map[string]string, req interface{}, prefix1 string, tag1 str
 		if fv.Kind() == reflect.Ptr {
 			fv = fv.Elem()
 		}
-		v1 := prefix1 + resolver1(t.Field(i).Tag.Get(tag1))
-		v2 := prefix2 + resolver2(t.Field(i).Tag.Get(tag2))
+		v1 := resolver1(t.Field(i).Tag.Get(tag1))
+		if v1 == "" {
+			v1 = t.Field(i).Name
+		}
+		v2 := resolver2(t.Field(i).Tag.Get(tag2))
+		if v2 == "" {
+			v2 = t.Field(i).Name
+		}
+		v1 = prefix1 + v1
+		v2 = prefix2 + v2
 		res[v1] = v2
 		if fv.Kind() == reflect.Struct {
 			prefix1 := v1 + "."
