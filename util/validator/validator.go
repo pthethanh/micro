@@ -1,4 +1,4 @@
-// Package validator provides convenient utilities for validation using https://github.com/go-playground/validator.
+// Package validator provides convenient utilities for validation.
 package validator
 
 import (
@@ -12,35 +12,44 @@ var (
 	validator *validate.Validate
 )
 
-// New return instance of validator
-func New() *validate.Validate {
+// New return new instance of validator with the given tag.
+func New(tag string) *validate.Validate {
+	v := validate.New()
+	if tag != "" {
+		v.SetTagName(tag)
+	}
+	return v
+}
+
+// Root return root validator instance using 'validate' tag.
+func Root() *validate.Validate {
 	once.Do(func() {
-		validator = validate.New()
+		validator = New("")
 	})
 	return validator
 }
 
-// Validate a structs exposed fields base on the definition of 'validate' tag.
+// Validate a struct exposed fields base on the definition of 'validate' tag.
 func Validate(v interface{}) error {
-	return New().Struct(v)
+	return Root().Struct(v)
 }
 
 // ValidatePartial validates the fields passed in only, ignoring all others.
 func ValidatePartial(v interface{}, fields ...string) error {
-	return New().StructPartial(v, fields...)
+	return Root().StructPartial(v, fields...)
 }
 
 // ValidateExcept validates all the fields except the given fields.
 func ValidateExcept(v interface{}, fields ...string) error {
-	return New().StructExcept(v, fields...)
+	return Root().StructExcept(v, fields...)
 }
 
 // Var validates a single variable using tag style validation.
 func Var(field interface{}, tag string) error {
-	return New().Var(field, tag)
+	return Root().Var(field, tag)
 }
 
 // RegisterValidation adds a validation with the given tag
 func RegisterValidation(tag string, fn validate.Func, callValidationEvenIfNull bool) error {
-	return New().RegisterValidation(tag, fn, callValidationEvenIfNull)
+	return Root().RegisterValidation(tag, fn, callValidationEvenIfNull)
 }
