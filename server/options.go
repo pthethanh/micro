@@ -13,6 +13,8 @@ import (
 	"github.com/gorilla/handlers"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
+	"github.com/opentracing/opentracing-go"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -474,6 +476,16 @@ func HeaderMatcher(keys []string) runtime.ServeMuxOption {
 		}
 		return runtime.DefaultHeaderMatcher(key)
 	})
+}
+
+// Tracing is an option to enable tracing on unary requests.
+func Tracing(tracer opentracing.Tracer) Option {
+	return UnaryInterceptors(otgrpc.OpenTracingServerInterceptor(tracer))
+}
+
+// StreamTracing is an option to enable tracing on stream requests.
+func StreamTracing(tracer opentracing.Tracer) Option {
+	return StreamInterceptors(otgrpc.OpenTracingStreamServerInterceptor(tracer))
 }
 
 // recoveryHandler print the context log to the configured writer and return

@@ -8,32 +8,21 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 
+	"github.com/pthethanh/micro/client"
 	pb "github.com/pthethanh/micro/examples/helloworld/helloworld"
 	"github.com/pthethanh/micro/health"
-	"google.golang.org/grpc"
+	_ "google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
 )
 
 func main() {
-	addr := ":" + os.Getenv("PORT")
-	if addr == ":" {
-		addr = os.Getenv("ADDRESS")
-	}
-	if addr == "" {
-		addr = ":8000"
-	}
-	fmt.Println(addr)
-	// GRPC
-	conn, err := grpc.Dial(addr, grpc.WithInsecure())
-	if err != nil {
-		log.Fatal(err)
-	}
-	grpcClient := pb.NewGreeterClient(conn)
+	addr := client.GetAddressFromEnv()
+	conn := client.Must(client.Dial(addr))
+	client := pb.NewGreeterClient(conn)
 	// Set correlation id for tracing in the logs.
 	//ctx := metadata.AppendToOutgoingContext(context.Background(), "X-Correlation-Id", "123-456-789-000")
-	rep, err := grpcClient.SayHello(context.Background(), &pb.HelloRequest{
+	rep, err := client.SayHello(context.Background(), &pb.HelloRequest{
 		Name: "Jack",
 	})
 	if err != nil {
