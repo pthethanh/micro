@@ -1,3 +1,4 @@
+// Package main provide an implementation example of gRPC using micro.
 package main
 
 import (
@@ -6,6 +7,7 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc"
 
+	"github.com/pthethanh/micro/config"
 	pb "github.com/pthethanh/micro/examples/helloworld/helloworld"
 	"github.com/pthethanh/micro/log"
 	"github.com/pthethanh/micro/server"
@@ -40,8 +42,12 @@ func (s *service) RegisterWithEndpoint(ctx context.Context, mux *runtime.ServeMu
 }
 
 func main() {
+	log.Init(log.FromEnv(config.WithFileNoError(".env")))
+
 	srv := &service{}
-	if err := server.ListenAndServe(srv); err != nil {
+	if err := server.New(
+		server.FromEnv(config.WithFileNoError(".env")),
+	).ListenAndServe(srv); err != nil {
 		log.Panic(err)
 	}
 }

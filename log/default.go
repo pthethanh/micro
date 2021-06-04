@@ -1,6 +1,8 @@
 package log
 
-import "context"
+import (
+	"context"
+)
 
 var (
 	root Logger

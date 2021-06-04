@@ -3,83 +3,114 @@ package main
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
+	"os"
+	"time"
 
 	"github.com/pthethanh/micro/client"
+	"github.com/pthethanh/micro/config"
 	pb "github.com/pthethanh/micro/examples/helloworld/helloworld"
 	"github.com/pthethanh/micro/health"
+	"github.com/pthethanh/micro/log"
 	_ "google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
 )
 
 func main() {
-	addr := client.GetAddressFromEnv()
-	conn := client.Must(client.Dial(addr))
-	client := pb.NewGreeterClient(conn)
-	// Set correlation id for tracing in the logs.
-	//ctx := metadata.AppendToOutgoingContext(context.Background(), "X-Correlation-Id", "123-456-789-000")
-	rep, err := client.SayHello(context.Background(), &pb.HelloRequest{
-		Name: "Jack",
-	})
+	correlationID := flag.String("correlation_id", "", "Use local correlation-id")
+	name := flag.String("name", "Jack", "Name for greeting")
+	flag.Parse()
+
+	log.Init(log.FromEnv(config.WithFileNoError(".env")))
+
+	conf := client.ReadConfigFromEnv(config.WithFileNoError(".env"))
+	conn := client.Must(client.Dial("", client.DialOptionsFromConfig(conf)...))
+	c := pb.NewGreeterClient(conn)
+	ctx := context.Background()
+	rep, err := c.SayHello(ctx, &pb.HelloRequest{
+		Name: *name,
+	}, client.WithCorrelationID(*correlationID))
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
-	log.Println("RESPONSE GRPC:", rep.Message)
+	log.Info("RESPONSE GRPC:", rep.Message)
+
+	// Health check.
+	rs, err := health.NewClient(conn).Check(context.Background(), &grpc_health_v1.HealthCheckRequest{})
+	if err != nil {
+		log.Panic("health check failed", err)
+	}
+	if rs.Status != health.StatusServing {
+		log.Panicf("got health status=%d, want status=%d", rs.Status, health.StatusServing)
+	}
+	log.Info("HEALTH CHECK GRPC:", rs.Status)
 
 	// HTTP
-	body := bytes.NewBuffer([]byte(`{"name":"Jack"}`))
-	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s/api/v1/hello", addr), body)
-	if err != nil {
-		log.Fatal(err)
+	host := fmt.Sprintf("http://%s", conf.Address)
+	if conf.TLSCertFile != "" {
+		host = fmt.Sprintf("https://%s", conf.Address)
 	}
-	// Set correlation id for tracing in the logs.
-	// req.Header.Set("X-Correlation-Id", "123-456-789-001")
-	res, err := http.DefaultClient.Do(req)
+	body := bytes.NewBuffer([]byte(fmt.Sprintf(`{"name":"%s"}`, *name)))
+	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/api/v1/hello", host), body)
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
+	}
+	if *correlationID != "" {
+		req.Header.Set("X-Correlation-Id", *correlationID)
+	}
+	httpClient := &http.Client{
+		Timeout: 5 * time.Second,
+	}
+	if conf.TLSCertFile != "" {
+		caCert, err := os.ReadFile(conf.TLSCertFile)
+		if err != nil {
+			log.Panic(err)
+		}
+		caCertPool := x509.NewCertPool()
+		caCertPool.AppendCertsFromPEM(caCert)
+		httpClient.Transport = &http.Transport{
+			TLSClientConfig: &tls.Config{
+				RootCAs: caCertPool,
+			},
+		}
+	}
+	res, err := httpClient.Do(req)
+	if err != nil {
+		log.Panic(err)
 	}
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
-		log.Fatalf("got status_code=%d, want status_code=%d", res.StatusCode, http.StatusOK)
+		log.Panicf("got status_code=%d, want status_code=%d", res.StatusCode, http.StatusOK)
 	}
 	v := &pb.HelloReply{}
 	if err := json.NewDecoder(res.Body).Decode(&v); err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
-	log.Println("RESPONSE HTTP:", v.Message)
+	log.Info("RESPONSE HTTP:", v.Message)
 
 	// internal apis
-	log.Println("HEALTH CHECK HTTP:", getString(fmt.Sprintf("http://%s/internal/health", addr)))
-	log.Printf("METRICS: \n%s\n", getString(fmt.Sprintf("http://%s/internal/metrics", addr)))
-
-	rs, err := health.NewClient(conn).Check(context.Background(), &grpc_health_v1.HealthCheckRequest{
-		Service: "",
-	})
-	if err != nil {
-		log.Fatal("health check failed", err)
-	}
-	if rs.Status != health.StatusServing {
-		log.Fatalf("got health status=%d, want status=%d", rs.Status, health.StatusServing)
-	}
-	log.Println("HEALTH CHECK GRPC:", rs.Status)
+	log.Info("HEALTH CHECK HTTP:", getString(httpClient, fmt.Sprintf("%s/internal/health", host)))
+	log.Infof("METRICS: \n%s\n", getString(httpClient, fmt.Sprintf("%s/internal/metrics", host)))
 }
 
-func getString(url string) string {
-	res, err := http.DefaultClient.Get(url)
+func getString(client *http.Client, url string) string {
+	res, err := client.Get(url)
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
-		log.Fatal("status code not ok, status_code=", res.StatusCode)
+		log.Panic("status code not ok, status_code=", res.StatusCode)
 	}
 	b, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 	return string(b)
 }
