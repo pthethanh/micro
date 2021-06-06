@@ -5,6 +5,7 @@ import (
 	"context"
 	"os"
 
+	"github.com/google/uuid"
 	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
 	"github.com/opentracing/opentracing-go"
 	"github.com/pthethanh/micro/auth/jwt"
@@ -138,11 +139,24 @@ func GetAddressFromEnv() string {
 	return "localhost:8000"
 }
 
-// WithCorrelationID is a call option for setting correlation id.
-func WithCorrelationID(id string) grpc.CallOption {
-	if id == "" {
-		return grpc.EmptyCallOption{}
+// NewTracingContext return new context with the given correlation id for log tracing.
+// Generate new correlation id if the given correlationID is empty.
+// NOTE that this function has nothing to do with tracing using opentracing.
+func NewTracingContext(ctx context.Context, correlationID string) context.Context {
+	if correlationID == "" {
+		correlationID = uuid.NewString()
 	}
-	md := metadata.Pairs("X-Correlation-Id", id)
-	return grpc.Header(&md)
+	return metadata.NewOutgoingContext(ctx, metadata.Pairs("X-Correlation-Id", correlationID))
+}
+
+// NewContextFromIncomingContext copies all the metadata from the given incoming context
+// to the out comming context.
+// Use this function if you want to forward all the original metadata from an incoming call
+// of a service to another one.
+func NewContextFromIncomingContext(ctx context.Context) context.Context {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return ctx
+	}
+	return metadata.NewOutgoingContext(ctx, md)
 }

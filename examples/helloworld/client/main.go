@@ -32,10 +32,9 @@ func main() {
 	conf := client.ReadConfigFromEnv(config.WithFileNoError(".env"))
 	conn := client.Must(client.Dial("", client.DialOptionsFromConfig(conf)...))
 	c := pb.NewGreeterClient(conn)
-	ctx := context.Background()
-	rep, err := c.SayHello(ctx, &pb.HelloRequest{
+	rep, err := c.SayHello(client.NewTracingContext(context.Background(), *correlationID), &pb.HelloRequest{
 		Name: *name,
-	}, client.WithCorrelationID(*correlationID))
+	})
 	if err != nil {
 		log.Panic(err)
 	}
