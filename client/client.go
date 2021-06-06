@@ -139,24 +139,25 @@ func GetAddressFromEnv() string {
 	return "localhost:8000"
 }
 
-// NewTracingContext return new context with the given correlation id for log tracing.
-// Generate new correlation id if the given correlationID is empty.
-// NOTE that this function has nothing to do with tracing using opentracing.
+// NewContext return new out going context with the given metadata,
+// it also copies all associated metadata in the incoming context to the new context.
+// NewContext panics if len(kv) is odd.
+func NewContext(ctx context.Context, kv ...string) context.Context {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		md = metadata.MD{}
+	}
+	return metadata.NewOutgoingContext(ctx, metadata.Join(md, metadata.Pairs(kv...)))
+}
+
+// NewTracingContext return new context with the given correlation id for log tracing,
+// it also copies all associated metadata in the incoming context to the new context.
+// If the given correlationID is empty, a new correlation id will be generated.
+//
+// NOTE: that this function has nothing to do with tracing using opentracing.
 func NewTracingContext(ctx context.Context, correlationID string) context.Context {
 	if correlationID == "" {
 		correlationID = uuid.NewString()
 	}
-	return metadata.NewOutgoingContext(ctx, metadata.Pairs("X-Correlation-Id", correlationID))
-}
-
-// NewContextFromIncomingContext copies all the metadata from the given incoming context
-// to the out comming context.
-// Use this function if you want to forward all the original metadata from an incoming call
-// of a service to another one.
-func NewContextFromIncomingContext(ctx context.Context) context.Context {
-	md, ok := metadata.FromIncomingContext(ctx)
-	if !ok {
-		return ctx
-	}
-	return metadata.NewOutgoingContext(ctx, md)
+	return NewContext(ctx, "X-Correlation-Id", correlationID)
 }
