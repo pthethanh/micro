@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/pthethanh/micro/client"
@@ -67,7 +66,7 @@ func main() {
 		Timeout: 5 * time.Second,
 	}
 	if conf.TLSCertFile != "" {
-		caCert, err := os.ReadFile(conf.TLSCertFile)
+		caCert, err := ioutil.ReadFile(conf.TLSCertFile)
 		if err != nil {
 			log.Panic(err)
 		}
