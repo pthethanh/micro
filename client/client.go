@@ -140,18 +140,21 @@ func GetAddressFromEnv() string {
 }
 
 // NewContext return new out going context with the given metadata,
-// it also copies all associated metadata in the incoming context to the new context.
+// it also copies all associated metadata in the incoming/outcomming context to the new context.
 // NewContext panics if len(kv) is odd.
 func NewContext(ctx context.Context, kv ...string) context.Context {
-	md, ok := metadata.FromIncomingContext(ctx)
-	if !ok {
-		md = metadata.MD{}
+	md := metadata.Pairs(kv...)
+	if imd, ok := metadata.FromIncomingContext(ctx); ok {
+		md = metadata.Join(md, imd)
 	}
-	return metadata.NewOutgoingContext(ctx, metadata.Join(md, metadata.Pairs(kv...)))
+	if omd, ok := metadata.FromOutgoingContext(ctx); ok {
+		md = metadata.Join(md, omd)
+	}
+	return metadata.NewOutgoingContext(ctx, md)
 }
 
 // NewTracingContext return new context with the given correlation id for log tracing,
-// it also copies all associated metadata in the incoming context to the new context.
+// it also copies all associated metadata in the incoming/outcoming context to the new context.
 // If the given correlationID is empty, a new correlation id will be generated.
 //
 // NOTE: that this function has nothing to do with tracing using opentracing.
