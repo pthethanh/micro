@@ -2,54 +2,66 @@
 package validator
 
 import (
-	"sync"
-
 	validate "github.com/go-playground/validator/v10"
 )
 
+type (
+	// Validator is a validation helper.
+	Validator struct {
+		v *validate.Validate
+	}
+)
+
 var (
-	once      sync.Once
-	validator *validate.Validate
+	root *Validator
 )
 
 // New return new instance of validator with the given tag.
-func New(tag string) *validate.Validate {
+func New(tag string) *Validator {
 	v := validate.New()
 	if tag != "" {
 		v.SetTagName(tag)
 	}
-	return v
+	return &Validator{
+		v: v,
+	}
 }
 
-// Root return root validator instance using 'validate' tag.
-func Root() *validate.Validate {
-	once.Do(func() {
-		validator = New("")
-	})
-	return validator
+// Init inits the root validator with the given tag.
+func Init(tag string) *Validator {
+	root = New(tag)
+	return root
 }
 
-// Validate a struct exposed fields base on the definition of 'validate' tag.
-func Validate(v interface{}) error {
-	return Root().Struct(v)
+// Root return root validator instance using default 'validate' tag.
+func Root() *Validator {
+	if root == nil {
+		root = Init("")
+	}
+	return root
+}
+
+// Validate a struct exposed fields base on the definition of validate tag.
+func (validator *Validator) Validate(v interface{}) error {
+	return validator.v.Struct(v)
 }
 
 // ValidatePartial validates the fields passed in only, ignoring all others.
-func ValidatePartial(v interface{}, fields ...string) error {
-	return Root().StructPartial(v, fields...)
+func (validator *Validator) ValidatePartial(v interface{}, fields ...string) error {
+	return validator.v.StructPartial(v, fields...)
 }
 
 // ValidateExcept validates all the fields except the given fields.
-func ValidateExcept(v interface{}, fields ...string) error {
-	return Root().StructExcept(v, fields...)
+func (validator *Validator) ValidateExcept(v interface{}, fields ...string) error {
+	return validator.v.StructExcept(v, fields...)
 }
 
 // Var validates a single variable using tag style validation.
-func Var(field interface{}, tag string) error {
-	return Root().Var(field, tag)
+func (validator *Validator) Var(field interface{}, tag string) error {
+	return validator.v.Var(field, tag)
 }
 
-// RegisterValidation adds a validation with the given tag
-func RegisterValidation(tag string, fn validate.Func, callValidationEvenIfNull bool) error {
-	return Root().RegisterValidation(tag, fn, callValidationEvenIfNull)
+// Register adds a validation with the given tag
+func (validator *Validator) Register(tag string, fn validate.Func, callValidationEvenIfNull bool) error {
+	return validator.v.RegisterValidation(tag, fn, callValidationEvenIfNull)
 }
