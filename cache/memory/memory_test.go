@@ -46,10 +46,21 @@ func TestCacheTimeout(t *testing.T) {
 	if _, err := m.Get(context.Background(), "k"); err != nil {
 		t.Fatalf("got err=%v, want err=nil", err)
 	}
+
+	// get should return err not found, even the cleaner has not done its job.
+	m = memory.New(5 * time.Second)
+	_ = m.Open(context.Background())
+	if err := m.Set(context.Background(), "k", []byte("v"), cache.TTL(100*time.Millisecond)); err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(150 * time.Millisecond)
+	if _, err := m.Get(context.Background(), "k"); (err != nil && err != cache.ErrNotFound) || err == nil {
+		t.Fatalf("got err=%v, want err=cache.ErrNotFound", err)
+	}
 }
 
 func TestCacheDelete(t *testing.T) {
-	var m cache.Cacher = memory.New()
+	var m cache.Cacher = memory.New(100 * time.Millisecond)
 	m.Open(context.Background())
 	defer m.Close(context.Background())
 	if err := m.Set(context.Background(), "k", []byte("v")); err != nil {

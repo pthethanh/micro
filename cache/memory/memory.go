@@ -11,9 +11,9 @@ import (
 type (
 	// Memory is an implementation of cache.Cacher
 	Memory struct {
-		values map[string]value
-		sync.RWMutex
-		exit chan struct{}
+		interval time.Duration
+		values   *sync.Map
+		exit     chan struct{}
 	}
 	value struct {
 		val []byte
@@ -26,24 +26,28 @@ var (
 )
 
 // New return new memory cache.
-func New() *Memory {
+// Interval is optional, but if set it will be used for cleanup
+// the expired keys periodically.
+func New(interval ...time.Duration) *Memory {
+	t := 500 * time.Millisecond
+	if len(interval) > 0 {
+		t = interval[0]
+	}
 	m := &Memory{
-		values: make(map[string]value),
-		exit:   make(chan struct{}),
+		interval: t,
+		values:   &sync.Map{},
+		exit:     make(chan struct{}),
 	}
 	return m
 }
 
 // Get a value.
 func (m *Memory) Get(ctx context.Context, key string) ([]byte, error) {
-	m.RLock()
-	defer m.RUnlock()
-	if val, ok := m.values[key]; ok {
+	if v, ok := m.values.Load(key); ok {
+		val := v.(value)
 		// if cleaner has not done its job yet, go ahead to delete
 		if val.expired() {
-			go func() {
-				m.Delete(ctx, key)
-			}()
+			_ = m.Delete(ctx, key)
 			return nil, cache.ErrNotFound
 		}
 		return val.val, nil
@@ -53,8 +57,6 @@ func (m *Memory) Get(ctx context.Context, key string) ([]byte, error) {
 
 // Set a value.
 func (m *Memory) Set(ctx context.Context, key string, val []byte, opts ...cache.SetOption) error {
-	m.Lock()
-	defer m.Unlock()
 	opt := &cache.SetOptions{}
 	opt.Apply(opts...)
 	v := value{
@@ -63,31 +65,29 @@ func (m *Memory) Set(ctx context.Context, key string, val []byte, opts ...cache.
 	if opt.TTL != 0 {
 		v.exp = time.Now().Add(opt.TTL)
 	}
-	m.values[key] = v
+	m.values.Store(key, v)
 	return nil
 }
 
 // Delete a value.
 func (m *Memory) Delete(ctx context.Context, key string) error {
-	m.Lock()
-	defer m.Unlock()
-	delete(m.values, key)
+	m.values.Delete(key)
 	return nil
 }
 
 func (m *Memory) clean() {
-	tik := time.NewTicker(500 * time.Millisecond)
+	tik := time.NewTicker(m.interval)
 	defer tik.Stop()
 	for {
 		select {
 		case <-tik.C:
-			m.Lock()
-			for k, v := range m.values {
-				if v.expired() {
-					delete(m.values, k)
+			m.values.Range(func(k, v interface{}) bool {
+				val := v.(value)
+				if val.expired() {
+					m.values.Delete(k)
 				}
-			}
-			m.Unlock()
+				return true
+			})
 		case <-m.exit:
 			return
 		}
