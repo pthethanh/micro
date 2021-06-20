@@ -1,9 +1,8 @@
 package broker
 
 import (
-	"encoding/json"
-
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 )
 
 type (
@@ -21,12 +20,12 @@ type (
 
 // Encode implements Encoder interface.
 func (e JSONEncoder) Encode(v *Message) ([]byte, error) {
-	return json.Marshal(v)
+	return protojson.Marshal(v)
 }
 
 // Decode implements Encoder interface.
 func (e JSONEncoder) Decode(b []byte, v *Message) error {
-	return json.Unmarshal(b, v)
+	return protojson.Unmarshal(b, v)
 }
 
 // Encode implements Encoder interface.
