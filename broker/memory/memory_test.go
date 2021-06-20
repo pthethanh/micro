@@ -2,12 +2,11 @@ package memory_test
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"testing"
 
 	"github.com/pthethanh/micro/broker"
 	"github.com/pthethanh/micro/broker/memory"
+	"github.com/pthethanh/micro/encoding"
 )
 
 func TestBroker(t *testing.T) {
@@ -65,13 +64,19 @@ func TestBroker(t *testing.T) {
 	// send n messages
 	n := 2
 	for i := 0; i < n; i++ {
-		m := mustNewMessage(json.Marshal, want, map[string]string{"type": "person"})
+		m, err := broker.NewMessage(want, encoding.ContentTypeJSON, "message-type", "person")
+		if err != nil {
+			t.Fatal(err)
+		}
 		if err := b.Publish(context.Background(), topic, m); err != nil {
 			t.Fatal(err)
 		}
 	}
 	// send another message to a topic no one subscribe should not impact to the result.
-	m := mustNewMessage(json.Marshal, want, map[string]string{"type": "person"})
+	m, err := broker.NewMessage(want, encoding.ContentTypeJSON, "message-type", "person")
+	if err != nil {
+		t.Fatal(err)
+	}
 	if err := b.Publish(context.Background(), "other-topic", m); err != nil {
 		t.Fatal(err)
 	}
@@ -83,26 +88,15 @@ func TestBroker(t *testing.T) {
 			t.Fatalf("got topic=%s, want topic=test", e.Topic())
 		}
 		got := Person{}
-		if err := json.Unmarshal(e.Message().Body, &got); err != nil {
-			t.Fatalf("got body=%v, want body=%v", got, want)
+		if err := e.Message().UnmarshalBodyTo(&got); err != nil {
+			t.Fatal(err)
 		}
-		if typ, ok := e.Message().Header["type"]; !ok || typ != "person" {
+		if typ, ok := e.Message().Header["message-type"]; !ok || typ != "person" {
 			t.Fatalf("got type=%s, want type=%s", typ, "person")
 		}
 	}
 	// should received n*2 messages: sub get n, subGroup1 + subGroup2 = n
 	if cnt != n*2 {
 		t.Fatalf("got number of messages=%d, want number of messages=%d", cnt, n*2)
-	}
-}
-
-func mustNewMessage(enc func(v interface{}) ([]byte, error), body interface{}, header map[string]string) *broker.Message {
-	b, err := enc(body)
-	if err != nil {
-		panic(fmt.Sprintf("broker: new message, err: %v", err))
-	}
-	return &broker.Message{
-		Header: header,
-		Body:   b,
 	}
 }
