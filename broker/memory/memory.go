@@ -11,13 +11,17 @@ import (
 	"github.com/google/uuid"
 	"github.com/pthethanh/micro/broker"
 	"github.com/pthethanh/micro/health"
+	"github.com/pthethanh/micro/util/syncutil"
 )
 
 type (
 	// Broker is a memory message broker.
 	Broker struct {
-		subs map[string][]*subscriber
-		mu   *sync.RWMutex
+		subs   map[string][]*subscriber
+		mu     *sync.RWMutex
+		ch     chan func() error
+		worker int
+		wg     *sync.WaitGroup
 	}
 
 	subscriber struct {
@@ -36,7 +40,7 @@ type (
 )
 
 var (
-	_ broker.Broker = &Broker{}
+	_ broker.Broker = (*Broker)(nil)
 )
 
 func init() {
@@ -46,8 +50,11 @@ func init() {
 // New return new memory broker.
 func New() *Broker {
 	return &Broker{
-		subs: make(map[string][]*subscriber),
-		mu:   &sync.RWMutex{},
+		subs:   make(map[string][]*subscriber),
+		mu:     &sync.RWMutex{},
+		ch:     make(chan func() error, 10000),
+		worker: 100,
+		wg:     &sync.WaitGroup{},
 	}
 }
 
@@ -79,7 +86,19 @@ func (sub *subscriber) Unsubscribe() error {
 
 // Open implements broker.Broker interface.
 func (br *Broker) Open(ctx context.Context) error {
-	// do nothing.
+	wg := sync.WaitGroup{}
+	wg.Add(br.worker)
+	br.wg.Add(br.worker)
+	for i := 0; i < br.worker; i++ {
+		go func() {
+			wg.Done()
+			defer br.wg.Done()
+			for h := range br.ch {
+				_ = h()
+			}
+		}()
+	}
+	wg.Wait()
 	return nil
 }
 
@@ -100,12 +119,12 @@ func (br *Broker) Publish(ctx context.Context, topic string, m *broker.Message, 
 			continue
 		}
 		// broad cast
-		sub.h(env)
+		br.ch <- func() error { return sub.h(env) }
 	}
 	// queue subscribers, send to only 1 single random subscriber in the list.
 	for _, queueSub := range queueSubs {
 		idx := rand.Intn(len(queueSub))
-		queueSub[idx].h(env)
+		br.ch <- func() error { return queueSub[idx].h(env) }
 	}
 	return nil
 }
@@ -150,6 +169,10 @@ func (br *Broker) HealthCheck() health.CheckFunc {
 
 // Close implements broker.Broker interface.
 func (br *Broker) Close(ctx context.Context) error {
+	close(br.ch)
+	syncutil.WaitCtx(ctx, 10*time.Millisecond, func(ctx context.Context) {
+		br.wg.Wait()
+	})
 	// unsubscribe all subsribers.
 	for _, subs := range br.subs {
 		for _, sub := range subs {

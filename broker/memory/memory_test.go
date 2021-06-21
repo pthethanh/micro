@@ -3,6 +3,7 @@ package memory_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/pthethanh/micro/broker"
 	"github.com/pthethanh/micro/broker/memory"
@@ -80,23 +81,28 @@ func TestBroker(t *testing.T) {
 	if err := b.Publish(context.Background(), "other-topic", m); err != nil {
 		t.Fatal(err)
 	}
-	close(ch)
 	cnt := 0
-	for e := range ch {
-		cnt++
-		if e.Topic() != topic {
-			t.Fatalf("got topic=%s, want topic=test", e.Topic())
+	timeout := time.After(50 * time.Millisecond)
+	for {
+		select {
+		case e := <-ch:
+			cnt++
+			if e.Topic() != topic {
+				t.Fatalf("got topic=%s, want topic=test", e.Topic())
+			}
+			got := Person{}
+			if err := e.Message().UnmarshalBodyTo(&got); err != nil {
+				t.Fatal(err)
+			}
+			if typ, ok := e.Message().Header["message-type"]; !ok || typ != "person" {
+				t.Fatalf("got type=%s, want type=%s", typ, "person")
+			}
+		case <-timeout:
+			// should received n*2 messages: sub get n, subGroup1 + subGroup2 = n
+			if cnt != n*2 {
+				t.Fatalf("got number of messages=%d, want number of messages=%d", cnt, n*2)
+			}
+			return
 		}
-		got := Person{}
-		if err := e.Message().UnmarshalBodyTo(&got); err != nil {
-			t.Fatal(err)
-		}
-		if typ, ok := e.Message().Header["message-type"]; !ok || typ != "person" {
-			t.Fatalf("got type=%s, want type=%s", typ, "person")
-		}
-	}
-	// should received n*2 messages: sub get n, subGroup1 + subGroup2 = n
-	if cnt != n*2 {
-		t.Fatalf("got number of messages=%d, want number of messages=%d", cnt, n*2)
 	}
 }

@@ -1,6 +1,9 @@
 package broker
 
 import (
+	"reflect"
+	"strings"
+
 	"github.com/pthethanh/micro/encoding"
 	"github.com/pthethanh/micro/status"
 )
@@ -8,15 +11,20 @@ import (
 const (
 	// ContentType is header key for content type.
 	ContentType = "content-type"
+	// MessageType is header key for type of message's body.
+	MessageType = "message-type"
 )
 
 // NewMessage create new message from the given information.
-// If the given message is proto.Message and is not set,
-// message type will be automatically retrieved.
+// Message type will be automatically retrieved.
 func NewMessage(message interface{}, contentType string, kv ...string) (*Message, error) {
+	if contentType == "" {
+		contentType = encoding.ContentTypeJSON
+	}
 	m := &Message{
 		Header: map[string]string{
 			ContentType: contentType,
+			MessageType: GetMessageType(message),
 		},
 	}
 	if len(kv)%2 == 1 {
@@ -29,6 +37,11 @@ func NewMessage(message interface{}, contentType string, kv ...string) (*Message
 		return nil, err
 	}
 	return m, nil
+}
+
+// GetMessageType return full type name of the given value without pointer indicator (*).
+func GetMessageType(v interface{}) string {
+	return strings.TrimPrefix(reflect.TypeOf(v).String(), "*")
 }
 
 // UnmarshalBodyTo try to unmarshal the body of the message to the given pointer
@@ -59,8 +72,14 @@ func (x *Message) MarshalToBody(v interface{}) error {
 // GetContentType return content type configured in the message's header.
 // Default to be json.
 func (x *Message) GetContentType() string {
-	if v, ok := x.Header[ContentType]; ok {
+	if v, ok := x.Header[ContentType]; ok && v != "" {
 		return v
 	}
 	return encoding.ContentTypeJSON
+}
+
+// GetMessageType return message type configured in the message's header.
+// Otherwise return empty string.
+func (x *Message) GetMessageType() string {
+	return x.Header[MessageType]
 }

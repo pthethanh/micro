@@ -1,8 +1,6 @@
 package encoding
 
 import (
-	"log"
-
 	"github.com/pthethanh/micro/encoding/json"
 	"google.golang.org/grpc/encoding"
 )
@@ -47,12 +45,4 @@ func GetCodec(subContentType string) Codec {
 // registered with the same name, the one registered last will take effect.
 func RegisterCodec(c Codec) {
 	encoding.RegisterCodec(c)
-}
-
-// MustMarshal panic if err is not nil.
-func MustMarshal(data []byte, err error) []byte {
-	if err != nil {
-		log.Panic(err)
-	}
-	return data
 }
