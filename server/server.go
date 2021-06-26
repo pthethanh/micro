@@ -32,6 +32,7 @@ type (
 	// Server holds the configuration options for the server instance.
 	Server struct {
 		lis         net.Listener
+		httpSrv     *http.Server
 		address     string
 		tlsCertFile string
 		tlsKeyFile  string
@@ -192,13 +193,13 @@ func (server *Server) ListenAndServeContext(ctx context.Context, services ...Ser
 
 	errChan := make(chan error, 1)
 	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, os.Interrupt, os.Kill, syscall.SIGTERM, syscall.SIGKILL)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 
 	handler := grpcHandlerFunc(isSecured, grpcServer, router)
 	for i := len(server.httpInterceptors) - 1; i >= 0; i-- {
 		handler = server.httpInterceptors[i](handler)
 	}
-	httpServer := &http.Server{
+	server.httpSrv = &http.Server{
 		Addr:         server.address,
 		Handler:      handler,
 		ReadTimeout:  server.readTimeout,
@@ -206,23 +207,23 @@ func (server *Server) ListenAndServeContext(ctx context.Context, services ...Ser
 	}
 	go func() {
 		if isSecured {
-			errChan <- httpServer.ServeTLS(server.lis, server.tlsCertFile, server.tlsKeyFile)
+			errChan <- server.httpSrv.ServeTLS(server.lis, server.tlsCertFile, server.tlsKeyFile)
 			return
 		}
-		errChan <- httpServer.Serve(server.lis)
+		errChan <- server.httpSrv.Serve(server.lis)
 	}()
 
 	// init health check service.
 	if err := server.healthSrv.Init(health.StatusServing); err != nil {
 		server.log.Context(ctx).Errorf("server: start health check server, err: %v", err)
-		server.gracefulShutdown(httpServer, server.shutdownTimeout)
+		server.Shutdown(ctx)
 		return err
 	}
 	defer server.healthSrv.Close()
 	server.log.Context(ctx).Infof("server: listening at: %s", server.address)
 	select {
 	case <-ctx.Done():
-		server.gracefulShutdown(httpServer, server.shutdownTimeout)
+		server.Shutdown(ctx)
 		return ctx.Err()
 	case err := <-errChan:
 		return err
@@ -230,17 +231,8 @@ func (server *Server) ListenAndServeContext(ctx context.Context, services ...Ser
 		switch s {
 		case os.Interrupt, syscall.SIGTERM:
 			server.log.Context(ctx).Info("server: gracefully shutdown...")
-			server.gracefulShutdown(httpServer, server.shutdownTimeout)
-		case os.Kill, syscall.SIGKILL:
-			server.log.Context(ctx).Info("server: kill...")
-			// It's a kill request, give the server maximum 5s to shutdown.
-			t := 5 * time.Second
-			if t > server.shutdownTimeout && server.shutdownTimeout > 0 {
-				t = server.shutdownTimeout
-			}
-			server.gracefulShutdown(httpServer, t)
+			server.Shutdown(ctx)
 		}
-		// waiting for srv.Serve to return to errChan.
 	}
 	return nil
 }
@@ -294,22 +286,19 @@ func (server Server) getAPIPrefix() string {
 	return server.apiPrefix
 }
 
-// gracefulShutdown shutdown the server gracefully, but with time limit.
-// negative timeout is considered as no timeout.
-func (server *Server) gracefulShutdown(srv *http.Server, t time.Duration) {
-	// tell clients and other services are shutting down...
-	// so that no requests should be routed to us.
-	if err := server.healthSrv.Close(); err != nil {
-		server.log.Errorf("server: shutdown health check service error: %v", err)
+// Shutdown shutdown the server gracefully.
+func (server *Server) Shutdown(ctx context.Context) {
+	if server.healthSrv != nil {
+		if err := server.healthSrv.Close(); err != nil {
+			server.log.Errorf("server: shutdown health check service error: %v", err)
+		}
 	}
-	ctx := context.TODO()
-	if t >= 0 {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(context.Background(), t)
+	if server.httpSrv != nil {
+		ctx, cancel := context.WithTimeout(ctx, server.shutdownTimeout)
 		defer cancel()
-	}
-	if err := srv.Shutdown(ctx); err != nil {
-		server.log.Errorf("server: shutdown error: %v", err)
+		if err := server.httpSrv.Shutdown(ctx); err != nil {
+			server.log.Errorf("server: shutdown error: %v", err)
+		}
 	}
 }
 
