@@ -84,7 +84,8 @@ type (
 		// MetricsPath is API path for Prometheus metrics.
 		MetricsPath string `envconfig:"METRICS_PATH" default:"/internal/metrics"`
 
-		RoutesPrioritization bool `envconfig:"ROUTES_PRIORITIZATION" default:"true"`
+		RoutesPrioritization bool   `envconfig:"ROUTES_PRIORITIZATION" default:"true"`
+		ShutdownHook         string `envconfig:"SHUTDOWN_HOOK"`
 	}
 )
 
@@ -118,6 +119,7 @@ func FromConfig(conf Config) Option {
 			CORS(conf.CORSAllowedCredential, conf.CORSAllowedHeaders, conf.CORSAllowedMethods, conf.CORSAllowedOrigins),
 			ShutdownTimeout(conf.ShutdownTimeout),
 			RoutesPrioritization(conf.RoutesPrioritization),
+			ShutdownHook(conf.ShutdownHook),
 		}
 		if conf.Metrics {
 			opts = append(opts, Metrics(conf.MetricsPath))
@@ -486,6 +488,25 @@ func Tracing(tracer opentracing.Tracer) Option {
 // StreamTracing is an option to enable tracing on stream requests.
 func StreamTracing(tracer opentracing.Tracer) Option {
 	return StreamInterceptors(otgrpc.OpenTracingStreamServerInterceptor(tracer))
+}
+
+// ShutdownHook expose an API for shutdown the server remotely.
+//
+// WARNING: this is an experiment API and
+// it should be enabled only in development mode for live reload.
+func ShutdownHook(path string) Option {
+	return func(opts *Server) {
+		// do nothing if path is empty.
+		if path == "" {
+			return
+		}
+		hopt := HandlerOptions{}
+		hopt.p = path
+		hopt.h = http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+			opts.Shutdown(context.Background())
+		})
+		opts.routes = append(opts.routes, hopt)
+	}
 }
 
 // recoveryHandler print the context log to the configured writer and return
