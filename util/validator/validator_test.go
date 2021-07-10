@@ -95,13 +95,13 @@ func TestValidatePartial(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			var err error
 			if c.fields != nil {
-				err = validator.New(c.tag).ValidatePartial(c.value, c.fields...)
+				err = validator.Get(c.tag).ValidatePartial(c.value, c.fields...)
 			} else if c.excepts != nil {
-				err = validator.New(c.tag).ValidateExcept(c.value, c.excepts...)
+				err = validator.Get(c.tag).ValidateExcept(c.value, c.excepts...)
 			} else if c.field {
-				err = validator.Root().Var(c.value, c.fieldTag)
+				err = validator.Get("").Var(c.value, c.fieldTag)
 			} else {
-				err = validator.New(c.tag).Validate(c.value)
+				err = validator.Get(c.tag).Validate(c.value)
 			}
 			if c.err && err == nil {
 				t.Errorf("got validation success, want validation fail.")
