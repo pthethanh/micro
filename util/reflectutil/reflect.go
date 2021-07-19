@@ -30,6 +30,7 @@ type (
 		DstResolver TagResolverFunc
 		TagValues   []string
 	}
+	M map[string]string
 )
 
 var (
@@ -37,12 +38,6 @@ var (
 	FirstValueTagResolverFunc = func(v string) string {
 		return strings.Split(v, ",")[0]
 	}
-
-	// DefaultTagResolverFunc is default tag resolver function if not provided.
-	DefaultTagResolverFunc = FirstValueTagResolverFunc
-
-	// JSONTagResolverFunc is a tag resolver for resolving json tag name.
-	JSONTagResolverFunc = FirstValueTagResolverFunc
 
 	// ProtobufTagResolverFunc is a tag resolver for resolving protobuf tag name.
 	ProtobufTagResolverFunc = func(v string) string {
@@ -59,55 +54,55 @@ var (
 // GetFieldNamesFromTags return struct' field names of the given tag's values.
 // Return all field names if values is nil or its first value is *.
 // Return nil if the given value is not a struct.
-func GetFieldNamesFromTags(req GetFieldNamesFromTagsRequest) []string {
+func GetFieldNamesFromTags(req GetFieldNamesFromTagsRequest) M {
 	if req.Value == nil {
 		return nil
 	}
 	m := make(map[string]string)
 	if req.Resolver == nil {
-		req.Resolver = DefaultTagResolverFunc
+		req.Resolver = FirstValueTagResolverFunc
 	}
 	tagsToFieldNames(m, req.Value, "", "", req.Tag, req.Resolver)
 	addAll := len(req.TagValues) == 0 || req.TagValues[0] == "*"
-	rs := make([]string, 0)
+	rs := make(M)
 	if addAll {
-		for _, v := range m {
-			rs = append(rs, v)
+		for k, v := range m {
+			rs[k] = v
 		}
 		return rs
 	}
 	for _, v := range req.TagValues {
 		if fv, ok := m[v]; ok {
-			rs = append(rs, fv)
+			rs[v] = fv
 		}
 	}
 	return rs
 }
 
 // GetTagsFromTags get tag mapping values coresponding to the given tag values.
-func GetTagsFromTags(req GetTagsFromTagsRequest) []string {
+func GetTagsFromTags(req GetTagsFromTagsRequest) M {
 	if req.Value == nil {
 		return nil
 	}
 	m := make(map[string]string)
 	if req.SrcResolver == nil {
-		req.SrcResolver = DefaultTagResolverFunc
+		req.SrcResolver = FirstValueTagResolverFunc
 	}
 	if req.DstResolver == nil {
-		req.DstResolver = DefaultTagResolverFunc
+		req.DstResolver = FirstValueTagResolverFunc
 	}
 	tagsToTags(m, req.Value, "", req.SrcTag, req.SrcResolver, "", req.DstTag, req.DstResolver)
 	addAll := len(req.TagValues) == 0 || req.TagValues[0] == "*"
-	rs := make([]string, 0)
+	rs := make(M)
 	if addAll {
-		for _, v := range m {
-			rs = append(rs, v)
+		for k, v := range m {
+			rs[k] = v
 		}
 		return rs
 	}
 	for _, v := range req.TagValues {
 		if fv, ok := m[v]; ok {
-			rs = append(rs, fv)
+			rs[v] = fv
 		}
 	}
 	return rs
@@ -195,4 +190,20 @@ func tagsToTags(res map[string]string, req interface{}, prefix1 string, tag1 str
 			tagsToTags(res, fv.Interface(), prefix1, tag1, resolver1, prefix2, tag2, resolver2)
 		}
 	}
+}
+
+func (m M) Keys() []string {
+	v := make([]string, 0)
+	for k := range m {
+		v = append(v, k)
+	}
+	return v
+}
+
+func (m M) Values() []string {
+	v := make([]string, 0)
+	for _, vv := range m {
+		v = append(v, vv)
+	}
+	return v
 }

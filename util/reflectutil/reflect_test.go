@@ -63,16 +63,17 @@ func TestTagsToStructFields(t *testing.T) {
 			got := reflectutil.GetFieldNamesFromTags(reflectutil.GetFieldNamesFromTagsRequest{
 				Value:     c.value,
 				Tag:       "json",
-				Resolver:  reflectutil.JSONTagResolverFunc,
+				Resolver:  reflectutil.FirstValueTagResolverFunc,
 				TagValues: c.tags,
 			})
 			if len(got) != len(c.want) {
 				t.Errorf("got fields=%s, want fields=%s", got, c.want)
 			}
-			sort.Strings(got)
+			values := got.Values()
+			sort.Strings(values)
 			sort.Strings(c.want)
 			for i := 0; i < len(got); i++ {
-				if got[i] != c.want[i] {
+				if values[i] != c.want[i] {
 					t.Errorf("got fields=%s, want fields=%s", got, c.want)
 					return
 				}
@@ -141,7 +142,7 @@ func TestTagsToTags(t *testing.T) {
 			got := reflectutil.GetTagsFromTags(reflectutil.GetTagsFromTagsRequest{
 				Value:       c.value,
 				SrcTag:      "json",
-				SrcResolver: reflectutil.JSONTagResolverFunc,
+				SrcResolver: reflectutil.FirstValueTagResolverFunc,
 				DstTag:      "bson",
 				DstResolver: reflectutil.FirstValueTagResolverFunc,
 				TagValues:   c.tags,
@@ -149,10 +150,11 @@ func TestTagsToTags(t *testing.T) {
 			if len(got) != len(c.want) {
 				t.Errorf("got tags=%s, want tags=%s", got, c.want)
 			}
-			sort.Strings(got)
+			values := got.Values()
+			sort.Strings(values)
 			sort.Strings(c.want)
 			for i := 0; i < len(got); i++ {
-				if got[i] != c.want[i] {
+				if values[i] != c.want[i] {
 					t.Errorf("got tags=%s, want tags=%s", got, c.want)
 					return
 				}
@@ -175,17 +177,18 @@ func TestTagsToFieldNamesNilValues(t *testing.T) {
 	got := reflectutil.GetFieldNamesFromTags(reflectutil.GetFieldNamesFromTagsRequest{
 		Value:     &v,
 		Tag:       "json",
-		Resolver:  reflectutil.JSONTagResolverFunc,
+		Resolver:  reflectutil.FirstValueTagResolverFunc,
 		TagValues: []string{"name", "address", "address.home", "address.work"},
 	})
 	want := []string{"Name", "Address"}
 	if len(got) != len(want) {
 		t.Fatalf("got fields=%s, want fields=%s", got, want)
 	}
-	sort.Strings(got)
+	values := got.Values()
+	sort.Strings(values)
 	sort.Strings(want)
 	for i := 0; i < len(got); i++ {
-		if got[i] != want[i] {
+		if values[i] != want[i] {
 			t.Errorf("got fields=%s, want fields=%s", got, want)
 			return
 		}
@@ -214,7 +217,7 @@ func TestTagsToTagsNilValues(t *testing.T) {
 	got := reflectutil.GetTagsFromTags(reflectutil.GetTagsFromTagsRequest{
 		Value:       &v,
 		SrcTag:      "json",
-		SrcResolver: reflectutil.JSONTagResolverFunc,
+		SrcResolver: reflectutil.FirstValueTagResolverFunc,
 		DstTag:      "bson",
 		DstResolver: reflectutil.FirstValueTagResolverFunc,
 		TagValues:   []string{"name", "address", "address.home", "address.work"},
@@ -223,10 +226,11 @@ func TestTagsToTagsNilValues(t *testing.T) {
 	if len(got) != len(want) {
 		t.Fatalf("got tags=%s, want tags=%s", got, want)
 	}
-	sort.Strings(got)
+	values := got.Values()
+	sort.Strings(values)
 	sort.Strings(want)
 	for i := 0; i < len(got); i++ {
-		if got[i] != want[i] {
+		if values[i] != want[i] {
 			t.Errorf("got tags=%s, want tags=%s", got, want)
 			return
 		}
