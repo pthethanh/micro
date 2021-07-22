@@ -30,6 +30,7 @@ type (
 		DstResolver TagResolverFunc
 		TagValues   []string
 	}
+	// M is a map string of string.
 	M map[string]string
 )
 
@@ -192,6 +193,7 @@ func tagsToTags(res map[string]string, req interface{}, prefix1 string, tag1 str
 	}
 }
 
+// Keys return keys of the map.
 func (m M) Keys() []string {
 	v := make([]string, 0)
 	for k := range m {
@@ -200,6 +202,7 @@ func (m M) Keys() []string {
 	return v
 }
 
+// Values return values of the map.
 func (m M) Values() []string {
 	v := make([]string, 0)
 	for _, vv := range m {
