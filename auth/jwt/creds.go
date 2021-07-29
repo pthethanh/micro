@@ -1,14 +1,10 @@
 package jwt
 
 import (
-	"errors"
-
 	"golang.org/x/net/context"
 
 	"google.golang.org/grpc/credentials"
 )
-
-var errUnauthenticated = errors.New("jwt: token missing from context")
 
 // NewJWTCredentialsFromToken returns a grpc rpc credential
 // using the provided JWT token. Does not validate the Token.
