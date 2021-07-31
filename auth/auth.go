@@ -6,6 +6,9 @@ import "context"
 const (
 	// AuthorizationMD authorization metadata name.
 	AuthorizationMD = "authorization"
+
+	// GrpcGwCookieMD is cookie metadata name of GRPC in gRPC GateWay Request.
+	GrpcGWCookieMD = "grpcgateway-cookie"
 )
 
 // Authenticator defines the interface to perform the actual

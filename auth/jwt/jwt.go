@@ -3,6 +3,7 @@ package jwt
 
 import (
 	"context"
+	"strings"
 
 	"github.com/pthethanh/micro/auth"
 
@@ -40,21 +41,33 @@ func DecodeOnly(secret []byte) auth.AuthenticatorFunc {
 	}
 }
 
-// ParseFromMetadata fetches the JWT from the :authorization metadata located
-// in the `Context`, validates the JWT and extracts the Claims.
+// ParseFromMetadata fetches the JWT from the authorization metadata
+// or in the grpcgateway-cookie located in the `Context`,
+// validates the JWT and extracts the Claims.
 func ParseFromMetadata(ctx context.Context, secret []byte, c jwt.Claims) error {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		return auth.ErrMetadataMissing
 	}
+	// check from header
 	slice, ok := md[auth.AuthorizationMD]
-	if !ok || len(slice) == 0 {
-		return auth.ErrAuthorizationMissing
+	if ok {
+		if len(slice) > 1 {
+			return auth.ErrMultipleAuthFound
+		}
+		return Parse(slice[0], secret, c)
 	}
-	if len(slice) > 1 {
-		return auth.ErrMultipleAuthFound
+	// check from cookie
+	for _, cookies := range md[auth.GrpcGWCookieMD] {
+		for _, cookie := range strings.Split(cookies, ";") {
+			slice := strings.Split(strings.TrimSpace(cookie), "=")
+			if len(slice) == 2 && slice[0] == auth.AuthorizationMD {
+				return Parse(slice[1], secret, c)
+			}
+		}
 	}
-	return Parse(slice[0], secret, c)
+
+	return auth.ErrAuthorizationMissing
 }
 
 // Parse and validate a JWT string.
