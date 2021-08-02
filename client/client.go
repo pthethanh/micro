@@ -3,6 +3,7 @@ package client
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	"github.com/google/uuid"
@@ -128,13 +129,11 @@ func WithStreamTracing(tracer opentracing.Tracer) grpc.DialOption {
 // GetAddressFromEnv return address from environment variable ADDRESS if defined.
 // otherwise return default :8000
 func GetAddressFromEnv() string {
-	addr := os.Getenv("ADDRESS")
-	if addr != "" {
-		return addr
+	if p := os.Getenv("PORT"); p != "" {
+		return fmt.Sprintf(":%s", p)
 	}
-	port := os.Getenv("PORT")
-	if port != "" {
-		return ":" + port
+	if addr := os.Getenv("ADDRESS"); addr != "" {
+		return addr
 	}
 	return "localhost:8000"
 }
