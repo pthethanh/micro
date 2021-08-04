@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/google/uuid"
 	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
 	"github.com/opentracing/opentracing-go"
 	"github.com/pthethanh/micro/auth/jwt"
 	"github.com/pthethanh/micro/config"
 	"github.com/pthethanh/micro/config/envconfig"
 	"github.com/pthethanh/micro/log"
+	"github.com/pthethanh/micro/util/contextutil"
 	"google.golang.org/grpc"
 
 	"google.golang.org/grpc/credentials"
@@ -159,7 +159,7 @@ func NewContext(ctx context.Context, kv ...string) context.Context {
 // NOTE: that this function has nothing to do with tracing using opentracing.
 func NewTracingContext(ctx context.Context, correlationID string) context.Context {
 	if correlationID == "" {
-		correlationID = uuid.NewString()
+		return NewContext(ctx)
 	}
-	return NewContext(ctx, "X-Correlation-Id", correlationID)
+	return NewContext(ctx, contextutil.XCorrelationID, correlationID)
 }

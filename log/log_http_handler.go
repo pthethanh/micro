@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/pthethanh/micro/util/contextutil"
 )
 
 // NewHTTPContextHandler provides a context logger with correlation_id and other basic HTTP information.
@@ -36,10 +37,10 @@ func NewHTTPContextHandler(l Logger) func(http.Handler) http.Handler {
 }
 
 func getCorrelationID(r *http.Request) string {
-	if id := r.Header.Get("X-Correlation-ID"); id != "" {
+	if id := r.Header.Get(contextutil.XCorrelationID); id != "" {
 		return id
 	}
-	if id := r.Header.Get("X-Request-ID"); id != "" {
+	if id := r.Header.Get(contextutil.XRequestID); id != "" {
 		return id
 	}
 	return uuid.New().String()

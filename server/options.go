@@ -111,6 +111,8 @@ func FromEnv(configOpts ...config.ReadOption) Option {
 func FromConfig(conf Config) Option {
 	return func(server *Server) {
 		opts := []Option{
+			UnaryInterceptors(CorrelationIDUnaryInterceptor()),
+			StreamInterceptors(CorrelationIDStreamInterceptor()),
 			Address(conf.Address),
 			TLS(conf.TLSKeyFile, conf.TLSCertFile),
 			Timeout(conf.ReadTimeout, conf.WriteTimeout),

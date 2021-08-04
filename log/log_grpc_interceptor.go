@@ -4,11 +4,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/google/uuid"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware/v2"
+	"github.com/pthethanh/micro/util/contextutil"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
 )
 
 // StreamInterceptor returns a grpc.StreamServerInterceptor that provides
@@ -17,7 +16,7 @@ import (
 // For REST API via gRPC Gateway, pass the value of X-Correlation-ID or X-Request-ID in the header.
 func StreamInterceptor(l Logger) grpc.StreamServerInterceptor {
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-		correlationID := correlationIDFromGRPCContext(ss.Context())
+		correlationID, _ := contextutil.CorrelationIDFromContext(ss.Context())
 		logger := l.Fields(CorrelationID, correlationID, "method", info.FullMethod)
 		newCtx := NewContext(ss.Context(), logger)
 		wrapped := grpc_middleware.WrapServerStream(ss)
@@ -36,7 +35,7 @@ func StreamInterceptor(l Logger) grpc.StreamServerInterceptor {
 // For REST API via gRPC Gateway, pass the value of X-Correlation-ID or X-Request-ID in the header.
 func UnaryInterceptor(l Logger) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
-		correlationID := correlationIDFromGRPCContext(ctx)
+		correlationID, _ := contextutil.CorrelationIDFromContext(ctx)
 		logger := l.Fields(CorrelationID, correlationID, "method", info.FullMethod)
 		newCtx := NewContext(ctx, logger)
 		return runWithLog(logger, info.FullMethod, func() (interface{}, error) {
@@ -55,19 +54,4 @@ func runWithLog(logger Logger, method string, f func() (interface{}, error)) (in
 	}
 	logger.Fields("phase", "response", "duration", time.Since(bg), "status", status, "error", err).Info("request finished")
 	return res, err
-}
-
-// correlationIDFromGRPCContext tries to get value of X-Correlation-ID then X-Request-ID from meta data.
-// If no value is provided, a new UUID value will be return.
-func correlationIDFromGRPCContext(ctx context.Context) string {
-	md, ok := metadata.FromIncomingContext(ctx)
-	if ok {
-		if v, ok := md["x-correlation-id"]; ok {
-			return v[0]
-		}
-		if v, ok := md["x-request-id"]; ok {
-			return v[0]
-		}
-	}
-	return uuid.New().String()
 }
