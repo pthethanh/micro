@@ -19,7 +19,12 @@ func CorrelationIDStreamInterceptor() grpc.StreamServerInterceptor {
 			return handler(srv, ss)
 		}
 		wrapped := grpc_middleware.WrapServerStream(ss)
-		wrapped.WrappedContext = metadata.NewIncomingContext(ss.Context(), metadata.Pairs(contextutil.XCorrelationID, id))
+		md := metadata.Pairs(contextutil.XCorrelationID, id)
+		if imd, ok := metadata.FromIncomingContext(ss.Context()); ok {
+			md = metadata.Join(md, imd)
+		}
+		wrapped.WrappedContext = metadata.NewIncomingContext(ss.Context(), md)
+
 		return handler(srv, wrapped)
 	}
 }
@@ -33,7 +38,11 @@ func CorrelationIDUnaryInterceptor() grpc.UnaryServerInterceptor {
 		if ok {
 			return handler(ctx, req)
 		}
-		newCtx := metadata.NewIncomingContext(ctx, metadata.Pairs(contextutil.XCorrelationID, id))
+		md := metadata.Pairs(contextutil.XCorrelationID, id)
+		if imd, ok := metadata.FromIncomingContext(ctx); ok {
+			md = metadata.Join(md, imd)
+		}
+		newCtx := metadata.NewIncomingContext(ctx, md)
 		return handler(newCtx, req)
 	}
 }
