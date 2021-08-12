@@ -1,4 +1,5 @@
 // Package reflectutil provides some convenient utilities for working with reflect.
+// Note that this package is just an experiment and might be removed in the future.
 package reflectutil
 
 import (

@@ -19,7 +19,11 @@ func New() *Codec {
 	return &Codec{
 		m: &runtime.JSONPb{
 			MarshalOptions: protojson.MarshalOptions{
-				UseProtoNames: true,
+				UseProtoNames:  true,
+				UseEnumNumbers: true,
+			},
+			UnmarshalOptions: protojson.UnmarshalOptions{
+				DiscardUnknown: true,
 			},
 		},
 	}

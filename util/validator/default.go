@@ -19,3 +19,23 @@ func Get(tag string) *Validator {
 	cache.Store(tag, v)
 	return v
 }
+
+// Validate a struct exposed fields base on the definition of validate tag.
+func Validate(v interface{}) error {
+	return Root().Validate(v)
+}
+
+// ValidatePartial validates the fields passed in only, ignoring all others.
+func ValidatePartial(v interface{}, fields ...string) error {
+	return Root().ValidatePartial(v, fields...)
+}
+
+// ValidateExcept validates all the fields except the given fields.
+func ValidateExcept(v interface{}, fields ...string) error {
+	return Root().ValidateExcept(v, fields...)
+}
+
+// Var validates a single variable using tag style validation.
+func Var(field interface{}, tag string) error {
+	return Root().Var(field, tag)
+}
