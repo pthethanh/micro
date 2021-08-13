@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"net/http/pprof"
 	"net/textproto"
-	"os"
 	"time"
 
 	"github.com/gorilla/handlers"
@@ -103,7 +102,7 @@ func FromEnv(configOpts ...config.ReadOption) Option {
 	envconfig.Read(&conf, configOpts...)
 	return func(opts *Server) {
 		FromConfig(conf)(opts)
-		AddressFromEnv()(opts)
+		AddressFromEnv(configOpts...)(opts)
 	}
 }
 
@@ -275,20 +274,28 @@ func HealthCheck(path string, srv health.Server) Option {
 // AddressFromEnv is an option allows user to set address using environment configuration.
 // It looks for PORT and then ADDRESS variables.
 // This option is mostly used for cloud environment like Heroku where the port is randomly set.
-func AddressFromEnv() Option {
-	return func(opts *Server) {
-		if p := os.Getenv("PORT"); p != "" {
-			opts.address = fmt.Sprintf(":%s", p)
-			return
-		}
-		if addr := os.Getenv("ADDRESS"); addr != "" {
-			opts.address = addr
-			return
-		}
-		if opts.address == "" {
-			opts.address = defaultAddr
-		}
+func AddressFromEnv(opts ...config.ReadOption) Option {
+	return func(srv *Server) {
+		srv.address = GetAddressFromEnv(opts...)
 	}
+}
+
+// GetAddressFromEnv returns address from configured environment variables: PORT or ADDRESS.
+// This function prioritizes PORT over ADDRESS.
+// If non of the variables is configured, return default address.
+func GetAddressFromEnv(opts ...config.ReadOption) string {
+	var conf struct {
+		Port    string `envconfig:"PORT"`
+		Address string `envconfig:"ADDRESS"`
+	}
+	envconfig.Read(&conf, opts...)
+	if conf.Port != "" {
+		return fmt.Sprintf(":%s", conf.Port)
+	}
+	if conf.Address != "" {
+		return conf.Address
+	}
+	return defaultAddr
 }
 
 // Handler is an option allows user to add additional HTTP handlers.

@@ -4,7 +4,6 @@ package client
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
 	"github.com/opentracing/opentracing-go"
@@ -126,14 +125,20 @@ func WithStreamTracing(tracer opentracing.Tracer) grpc.DialOption {
 	return grpc.WithStreamInterceptor(otgrpc.OpenTracingStreamClientInterceptor(tracer))
 }
 
-// GetAddressFromEnv return address from environment variable ADDRESS if defined.
-// otherwise return default :8000
-func GetAddressFromEnv() string {
-	if p := os.Getenv("PORT"); p != "" {
-		return fmt.Sprintf(":%s", p)
+// GetAddressFromEnv returns address from configured environment variables: PORT or ADDRESS.
+// This function prioritizes PORT over ADDRESS.
+// If non of the variables is configured, return default address.
+func GetAddressFromEnv(opts ...config.ReadOption) string {
+	var conf struct {
+		Port    string `envconfig:"PORT"`
+		Address string `envconfig:"ADDRESS"`
 	}
-	if addr := os.Getenv("ADDRESS"); addr != "" {
-		return addr
+	envconfig.Read(&conf, opts...)
+	if conf.Port != "" {
+		return fmt.Sprintf(":%s", conf.Port)
+	}
+	if conf.Address != "" {
+		return conf.Address
 	}
 	return "localhost:8000"
 }
