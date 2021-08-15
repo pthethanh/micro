@@ -87,6 +87,7 @@ func DialContext(ctx context.Context, address string, options ...grpc.DialOption
 	if len(opts) == 0 {
 		opts = append(opts, grpc.WithInsecure())
 	}
+	log.Context(ctx).Infof("dialing to address: %s", address)
 	conn, err := grpc.DialContext(ctx, address, opts...)
 	if err != nil {
 		log.Errorf("dial to %s failed, err: %v", address, err)
@@ -143,7 +144,7 @@ func GetAddressFromEnv(opts ...config.ReadOption) string {
 	if conf.Address != "" {
 		return conf.Address
 	}
-	return "localhost:8000"
+	return ":8000"
 }
 
 // NewContext return new out going context with the given metadata,

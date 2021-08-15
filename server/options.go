@@ -100,8 +100,7 @@ func ReadConfigFromEnv(opts ...config.ReadOption) Config {
 // FromEnv is an option to create a new server from environment variables configuration.
 // See Config for the available options.
 func FromEnv(configOpts ...config.ReadOption) Option {
-	conf := Config{}
-	envconfig.Read(&conf, configOpts...)
+	conf := ReadConfigFromEnv(configOpts...)
 	return func(opts *Server) {
 		FromConfig(conf)(opts)
 	}
