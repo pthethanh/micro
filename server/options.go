@@ -37,6 +37,7 @@ type (
 		// Name is name of the service.
 		Name string `envconfig:"NAME" default:"micro"`
 		// Address is the address of the service in form of host:port.
+		// If PORT environment variable is configured, it will be prioritized over ADDRESS.
 		Address string `envconfig:"ADDRESS" default:":8000"`
 		// TLSCertFile is path to the TLS certificate file.
 		TLSCertFile string `envconfig:"TLS_CERT_FILE"`
@@ -92,6 +93,7 @@ type (
 func ReadConfigFromEnv(opts ...config.ReadOption) Config {
 	conf := Config{}
 	envconfig.Read(&conf, opts...)
+	conf.Address = GetAddressFromEnv()
 	return conf
 }
 
@@ -102,7 +104,6 @@ func FromEnv(configOpts ...config.ReadOption) Option {
 	envconfig.Read(&conf, configOpts...)
 	return func(opts *Server) {
 		FromConfig(conf)(opts)
-		AddressFromEnv(configOpts...)(opts)
 	}
 }
 

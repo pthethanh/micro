@@ -22,6 +22,8 @@ import (
 type (
 	// Config hold some basic client configuration.
 	Config struct {
+		// Address is the address of the server in form of host:port.
+		// If PORT environment variable is configured, it will be prioritized over ADDRESS.
 		Address     string `envconfig:"ADDRESS" default:"localhost:8000"`
 		TLSCertFile string `envconfig:"TLS_CERT_FILE"`
 		JWTToken    string `envconfig:"JWT_TOKEN"`
@@ -37,6 +39,7 @@ type (
 func ReadConfigFromEnv(opts ...config.ReadOption) *Config {
 	conf := Config{}
 	envconfig.Read(&conf, opts...)
+	conf.Address = GetAddressFromEnv(opts...)
 	return &conf
 }
 
