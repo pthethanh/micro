@@ -15,6 +15,8 @@ export PATH := $(GOPATH)/bin:$(PATH)
 
 all: mod_tidy fmt vet test build_plugins
 
+micro: mod_tidy fmt vet test
+
 vet:
 	$(GO_BUILD_ENV) go vet $(GO_FILES)
 
