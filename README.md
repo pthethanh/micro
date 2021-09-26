@@ -20,7 +20,7 @@ I expect micro requires no more than 15 minutes for a beginner/intermediate deve
 
 micro is built around gRPC. It exposes both gRPC and REST API over 1 single port using [grpc-gateway](https://github.com/grpc-ecosystem/grpc-gateway), with default ready to use logger, metrics, health check APIs.
 
-Currently micro comes with a collection of plugins that can be found here: https://github.com/pthethanh/micro-plugins
+Currently micro comes with a collection of plugins that can be found [here](https://github.com/pthethanh/micro/tree/master/plugins)
 
 ## Getting Started
 
@@ -125,7 +125,7 @@ See [doc](https://pkg.go.dev/github.com/pthethanh/micro/auth?tab=doc) for  more 
 - Standard message broker interface.
 - Memory broker.
 - NATS plugin.
-- More plugins can be found here: https://github.com/pthethanh/micro-plugins/tree/main/broker
+- More plugins can be found [here](https://github.com/pthethanh/micro/tree/master/plugins/broker).
 
 See [doc](https://pkg.go.dev/github.com/pthethanh/micro/broker?tab=doc) for  more detail.
 
@@ -134,7 +134,7 @@ See [doc](https://pkg.go.dev/github.com/pthethanh/micro/broker?tab=doc) for  mor
 - Standard cache service interface.
 - Memory cache.
 - Redis plugin.
-- More plugins can be found here: https://github.com/pthethanh/micro-plugins/tree/main/cache
+- More plugins can be found [here](https://github.com/pthethanh/micro/tree/master/plugins/cache).
 
 See [doc](https://pkg.go.dev/github.com/pthethanh/micro/cache?tab=doc) for  more detail.
 

@@ -13,7 +13,7 @@ export PATH := $(GOPATH)/bin:$(PATH)
 
 .SILENT:
 
-all: fmt vet test
+all: mod_tidy fmt vet test build_plugins
 
 vet:
 	$(GO_BUILD_ENV) go vet $(GO_FILES)
@@ -26,6 +26,7 @@ test:
 
 mod_tidy:
 	$(GO_BUILD_ENV) go mod tidy
+	$(GO_BUILD_ENV) go mod download
 
 gen_proto: gen_proto_broker gen_proto_examples
 
@@ -60,3 +61,7 @@ gen_proto_examples: install_tools
      --grpc-gateway_opt logtostderr=true \
      --grpc-gateway_opt generate_unbound_methods=true \
      ./examples/helloworld/helloworld/helloworld.proto
+
+build_plugins:
+	$(MAKE) -C  plugins/broker/nats
+	$(MAKE) -C  plugins/cache/redis
