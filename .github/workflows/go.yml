@@ -22,5 +22,13 @@ jobs:
     - name: Check out code into the Go module directory
       uses: actions/checkout@v2
 
-    - name: Build
-      run: make all
+    - name: Build Micro
+      run: make micro
+
+    - name: Build Broker - Nats
+      run: make
+      working-directory: plugins/broker/nats
+
+    - name: Build Cache - Redis
+      run: make
+      working-directory: plugins/broker/redis
