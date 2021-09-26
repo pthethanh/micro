@@ -2,21 +2,26 @@ package json
 
 import (
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/pthethanh/micro/encoding"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
 type (
-	Codec struct {
+	codec struct {
 		m *runtime.JSONPb
 	}
 )
 
 const (
-	ContentType = "json"
+	Name = "json"
 )
 
-func New() *Codec {
-	return &Codec{
+func init() {
+	encoding.RegisterCodec(newCodec())
+}
+
+func newCodec() *codec {
+	return &codec{
 		m: &runtime.JSONPb{
 			MarshalOptions: protojson.MarshalOptions{
 				UseProtoNames:  true,
@@ -29,14 +34,14 @@ func New() *Codec {
 	}
 }
 
-func (m *Codec) Marshal(v interface{}) ([]byte, error) {
+func (m *codec) Marshal(v interface{}) ([]byte, error) {
 	return m.m.Marshal(v)
 }
 
-func (m *Codec) Unmarshal(data []byte, v interface{}) error {
+func (m *codec) Unmarshal(data []byte, v interface{}) error {
 	return m.m.Unmarshal(data, v)
 }
 
-func (m *Codec) Name() string {
-	return ContentType
+func (m *codec) Name() string {
+	return Name
 }

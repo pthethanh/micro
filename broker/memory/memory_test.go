@@ -65,19 +65,13 @@ func TestBroker(t *testing.T) {
 	// send n messages
 	n := 2
 	for i := 0; i < n; i++ {
-		m, err := broker.NewMessage(want, encoding.ContentTypeJSON, "message-type", "person")
-		if err != nil {
-			t.Fatal(err)
-		}
+		m := broker.Must(broker.NewMessage(want, encoding.ContentTypeJSON, "message-type", "person"))
 		if err := b.Publish(context.Background(), topic, m); err != nil {
 			t.Fatal(err)
 		}
 	}
 	// send another message to a topic no one subscribe should not impact to the result.
-	m, err := broker.NewMessage(want, encoding.ContentTypeJSON, "message-type", "person")
-	if err != nil {
-		t.Fatal(err)
-	}
+	m := broker.Must(broker.NewMessage(want, encoding.ContentTypeJSON, "message-type", "person"))
 	if err := b.Publish(context.Background(), "other-topic", m); err != nil {
 		t.Fatal(err)
 	}

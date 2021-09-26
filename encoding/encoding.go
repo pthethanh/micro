@@ -1,7 +1,6 @@
 package encoding
 
 import (
-	"github.com/pthethanh/micro/encoding/json"
 	"google.golang.org/grpc/encoding"
 )
 
@@ -13,13 +12,6 @@ const (
 type (
 	Codec = encoding.Codec
 )
-
-func init() {
-	// init only if not manual initalized yet.
-	if encoding.GetCodec(ContentTypeJSON) == nil {
-		RegisterCodec(json.New())
-	}
-}
 
 // GetCodec gets a registered Codec by content-subtype, or nil if no Codec is
 // registered for the content-subtype.

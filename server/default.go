@@ -2,6 +2,10 @@ package server
 
 import (
 	"context"
+
+	// register default codecs
+	_ "github.com/pthethanh/micro/encoding/json"
+	_ "google.golang.org/grpc/encoding/proto"
 )
 
 // ListenAndServe create a new server base on environment configuration (see server.Config)

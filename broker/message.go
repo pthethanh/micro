@@ -6,6 +6,10 @@ import (
 
 	"github.com/pthethanh/micro/encoding"
 	"github.com/pthethanh/micro/status"
+
+	// register default codecs
+	_ "github.com/pthethanh/micro/encoding/json"
+	_ "google.golang.org/grpc/encoding/proto"
 )
 
 const (
@@ -17,7 +21,9 @@ const (
 
 // NewMessage create new message from the given information.
 // Message type will be automatically retrieved.
-func NewMessage(message interface{}, contentType string, kv ...string) (*Message, error) {
+// ContentType is codec name: json, proto,... which is already registered
+// in advance via encoding.RegisterCodec.
+func NewMessage(message interface{}, contentType string, headers ...string) (*Message, error) {
 	if contentType == "" {
 		contentType = encoding.ContentTypeJSON
 	}
@@ -27,16 +33,24 @@ func NewMessage(message interface{}, contentType string, kv ...string) (*Message
 			MessageType: GetMessageType(message),
 		},
 	}
-	if len(kv)%2 == 1 {
+	if len(headers)%2 == 1 {
 		return nil, status.InvalidArgument("kv must be provided in pairs")
 	}
-	for i := 0; i < len(kv)/2; i++ {
-		m.Header[kv[i]] = kv[i+1]
+	for i := 0; i < len(headers)/2; i++ {
+		m.Header[headers[i]] = headers[i+1]
 	}
 	if err := m.MarshalToBody(message); err != nil {
 		return nil, err
 	}
 	return m, nil
+}
+
+// Must panics if the given err is not nil.
+func Must(m *Message, err error) *Message {
+	if err != nil {
+		panic(err)
+	}
+	return m
 }
 
 // GetMessageType return full type name of the given value without pointer indicator (*).
