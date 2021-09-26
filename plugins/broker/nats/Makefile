@@ -10,7 +10,7 @@ vet:
 	$(GO_BUILD_ENV) go vet $(GO_FILES)
 
 fmt:
-	$(GO_BUILD_ENV) go fmt $(GO_FILES)
+	$(GO_BUILD_ENV) go fmt ./...
 
 test:
 	$(GO_BUILD_ENV) go test $(GO_FILES) -cover -v -count=1
