@@ -31,4 +31,4 @@ jobs:
 
     - name: Build Cache - Redis
       run: make
-      working-directory: plugins/broker/redis
+      working-directory: plugins/cache/redis
