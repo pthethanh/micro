@@ -21,7 +21,7 @@ func TestBroker(t *testing.T) {
 	if err := b.Open(context.Background()); err != nil {
 		t.Fatalf("unexpected error: %v\n", err)
 	}
-	if err := b.HealthCheck()(context.TODO()); err != nil {
+	if err := b.CheckHealth(context.TODO()); err != nil {
 		t.Fatalf("unexpected error: %v\n", err)
 	}
 	ch := make(chan broker.Event, 100)

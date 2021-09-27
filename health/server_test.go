@@ -20,18 +20,18 @@ func TestHealthCheck(t *testing.T) {
 	// init, make service 1 ok, service 2 and 3 not ok
 	dSrv := 1 * time.Second
 	errSrv := errors.New("down")
-	srv := health.NewServer(map[string]health.CheckFunc{
-		"pkg.v1.MyService1": func(ctx context.Context) error {
+	srv := health.NewServer(map[string]health.Checker{
+		"pkg.v1.MyService1": health.CheckFunc(func(ctx context.Context) error {
 			// ok
 			return nil
-		},
-		"pkg.v1.MyService2": func(ctx context.Context) error {
+		}),
+		"pkg.v1.MyService2": health.CheckFunc(func(ctx context.Context) error {
 			time.Sleep(dSrv)
 			return nil
-		},
-		"pkg.v1.MyService3": func(ctx context.Context) error {
+		}),
+		"pkg.v1.MyService3": health.CheckFunc(func(ctx context.Context) error {
 			return errSrv
-		},
+		}),
 	}, health.Interval(500*time.Millisecond), health.Timeout(200*time.Millisecond))
 	srv.Init(health.StatusServing)
 	defer srv.Close()

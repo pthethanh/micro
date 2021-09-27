@@ -95,7 +95,7 @@ func New(ops ...Option) *Server {
 		server.address = defaultAddr
 	}
 	if server.healthSrv == nil {
-		server.healthSrv = health.NewServer(map[string]health.CheckFunc{})
+		server.healthSrv = health.NewServer(map[string]health.Checker{})
 	}
 
 	return server

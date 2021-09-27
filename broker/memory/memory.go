@@ -40,7 +40,8 @@ type (
 )
 
 var (
-	_ broker.Broker = (*Broker)(nil)
+	_ broker.Broker  = (*Broker)(nil)
+	_ health.Checker = (*Broker)(nil)
 )
 
 func init() {
@@ -159,12 +160,10 @@ func (br *Broker) Subscribe(ctx context.Context, topic string, h broker.Handler,
 	return newSub, nil
 }
 
-// HealthCheck implements broker.Broker interface.
-func (br *Broker) HealthCheck() health.CheckFunc {
-	return func(ctx context.Context) error {
-		// do nothing.
-		return nil
-	}
+// CheckHealth implements health.Checker interface.
+func (br *Broker) CheckHealth(ctx context.Context) error {
+	// do nothing.
+	return nil
 }
 
 // Close implements broker.Broker interface.

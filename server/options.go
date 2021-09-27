@@ -138,7 +138,7 @@ func FromConfig(conf Config) Option {
 		}
 		// create health check by default
 		opts = append(opts, HealthCheck(conf.HealthCheckPath,
-			health.NewServer(map[string]health.CheckFunc{},
+			health.NewServer(map[string]health.Checker{},
 				health.Logger(server.getLogger()))))
 		// recovery
 		if conf.Recovery {

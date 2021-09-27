@@ -21,7 +21,7 @@ import (
 type (
 	// MServer is a simple implementation of Server.
 	MServer struct {
-		checks map[string]CheckFunc
+		checks map[string]Checker
 		ticker *time.Ticker
 		log    log.Logger
 
@@ -96,7 +96,7 @@ var (
 )
 
 // NewServer return new gRPC health server.
-func NewServer(m map[string]CheckFunc, opts ...ServerOption) *MServer {
+func NewServer(m map[string]Checker, opts ...ServerOption) *MServer {
 	srv := &MServer{
 		checks: m,
 		server: health.NewServer(),
@@ -141,11 +141,8 @@ func (s *MServer) Init(status Status) error {
 	s.checkAll()
 	// schedule the check
 	go func() {
-		for {
-			select {
-			case <-s.ticker.C:
-				s.checkAll()
-			}
+		for range s.ticker.C {
+			s.checkAll()
 		}
 	}()
 	return nil
@@ -168,12 +165,12 @@ func (s *MServer) checkAll() {
 	logger.Fields("status", overall, "duration", time.Since(bg)).Info("health check completed")
 }
 
-func (s *MServer) check(service string, check CheckFunc) error {
+func (s *MServer) check(service string, check Checker) error {
 	ctx, cancel := context.WithTimeout(context.Background(), s.conf.Timeout)
 	defer cancel()
 	ch := make(chan error)
 	go func() {
-		ch <- check(ctx)
+		ch <- check.CheckHealth(ctx)
 	}()
 	select {
 	case err := <-ch:

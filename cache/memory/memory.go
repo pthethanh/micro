@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/pthethanh/micro/cache"
+	"github.com/pthethanh/micro/health"
 )
 
 type (
@@ -22,7 +23,8 @@ type (
 )
 
 var (
-	_ cache.Cacher = &Memory{}
+	_ cache.Cacher   = (*Memory)(nil)
+	_ health.Checker = (*Memory)(nil)
 )
 
 // New return new memory cache.
@@ -110,5 +112,11 @@ func (m *Memory) Open(ctx context.Context) error {
 // Close close underlying resources.
 func (m *Memory) Close(ctx context.Context) error {
 	close(m.exit)
+	return nil
+}
+
+// CheckHealth return health check func.
+func (m *Memory) CheckHealth(ctx context.Context) error {
+	// do nothing.
 	return nil
 }
