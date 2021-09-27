@@ -13,6 +13,7 @@ type (
 )
 
 const (
+	// Name is json codec name.
 	Name = "json"
 )
 

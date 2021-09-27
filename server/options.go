@@ -263,11 +263,20 @@ func Options(serverOpts ...grpc.ServerOption) Option {
 	}
 }
 
-// HealthCheck is an option allows user to provide custom health check server.
+// HealthCheck is an option allows user to provide a custom health check server.
 func HealthCheck(path string, srv health.Server) Option {
 	return func(opts *Server) {
 		opts.healthCheckPath = path
 		opts.healthSrv = srv
+	}
+}
+
+// HealthChecks is an option allows user to provide custom health checkers
+// using default health check server.
+func HealthChecks(checkers map[string]health.Checker) Option {
+	return func(opts *Server) {
+		opts.healthCheckPath = opts.getHealthCheckPath()
+		opts.healthSrv = health.NewServer(checkers, health.Logger(opts.getLogger()))
 	}
 }
 

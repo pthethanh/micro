@@ -8,8 +8,10 @@ import (
 )
 
 const (
+	// XCorrelationID correlation id header.
 	XCorrelationID = "x-correlation-id"
-	XRequestID     = "x-request-id"
+	// XRequestID request id header.
+	XRequestID = "x-request-id"
 )
 
 // CorrelationIDFromContext tries to get value of X-Correlation-ID then X-Request-ID from meta data.

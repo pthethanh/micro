@@ -22,7 +22,7 @@ var (
 	_ Checker = (CheckFunc)(nil)
 )
 
-// HealthCheck implements HealthChecker interface.
+// CheckHealth implements Checker interface.
 func (c CheckFunc) CheckHealth(ctx context.Context) error {
 	return c(ctx)
 }

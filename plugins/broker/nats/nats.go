@@ -54,7 +54,7 @@ func New(opts ...Option) *Nats {
 	return n
 }
 
-// Connect connect to target server.
+// Open connect to target server.
 func (n *Nats) Open(ctx context.Context) error {
 	n.log.Infof("nats: connecting to %s", n.addrs)
 	conn, err := nats.Connect(n.addrs, n.opts...)

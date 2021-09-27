@@ -5,11 +5,16 @@ import (
 )
 
 const (
-	ContentTypeJSON  = "json"
+	// ContentTypeJSON is json codec name.
+	ContentTypeJSON = "json"
+	// ContentTypeProto is proto codec name.
 	ContentTypeProto = "proto"
 )
 
 type (
+	// Codec defines the interface uses to encode and decode messages.  Note
+	// that implementations of this interface must be thread safe; a Codec's
+	// methods can be called from concurrent goroutines.
 	Codec = encoding.Codec
 )
 
