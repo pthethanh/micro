@@ -30,7 +30,8 @@ type (
 )
 
 var (
-	_ broker.Broker = (*Nats)(nil)
+	_ broker.Broker  = (*Nats)(nil)
+	_ health.Checker = (*Nats)(nil)
 )
 
 // New return a new NATs message broker.
@@ -111,14 +112,12 @@ func (n *Nats) Subscribe(ctx context.Context, topic string, h broker.Handler, op
 	}, nil
 }
 
-// HealthCheck return a health check func.
-func (n *Nats) HealthCheck() health.CheckFunc {
-	return health.CheckFunc(func(context.Context) error {
-		if !n.conn.IsConnected() {
-			return fmt.Errorf("nats: server status=%d", n.conn.Status())
-		}
-		return nil
-	})
+// CheckHealth implements health.Checker.
+func (n *Nats) CheckHealth(ctx context.Context) error {
+	if !n.conn.IsConnected() {
+		return fmt.Errorf("nats: server status=%d", n.conn.Status())
+	}
+	return nil
 }
 
 // Close flush in-flight messages and close the underlying connection.

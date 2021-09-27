@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	"github.com/pthethanh/micro/cache"
+	"github.com/pthethanh/micro/health"
 )
 
 type (
@@ -16,7 +17,8 @@ type (
 )
 
 var (
-	_ cache.Cacher = (*Redis)(nil)
+	_ cache.Cacher   = (*Redis)(nil)
+	_ health.Checker = (*Redis)(nil)
 )
 
 // New return a new cacher using Redis.
@@ -33,6 +35,9 @@ func New(opts ...Option) *Redis {
 // Open open connection to the target servers.
 func (r *Redis) Open(ctx context.Context) error {
 	r.conn = redis.NewUniversalClient(r.opts)
+	if err := r.conn.Ping(ctx).Err(); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -64,6 +69,11 @@ func (r *Redis) Delete(ctx context.Context, key string) error {
 		return cmd.Err()
 	}
 	return nil
+}
+
+// HealthCheck return health check function for checking health.
+func (r *Redis) CheckHealth(ctx context.Context) error {
+	return r.conn.Ping(ctx).Err()
 }
 
 // Close flush and close the underlying connection.
