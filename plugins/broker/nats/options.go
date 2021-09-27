@@ -13,8 +13,8 @@ import (
 type (
 	// Config hold common NATS configurations.
 	Config struct {
-		Addrs    string        `envconfig:"NATS_ADDRS" default:"nats:4222"`
-		Encoder  string        `envconfig:"NATS_ENCODER" default:"protobuf"`
+		Addrs    string        `envconfig:"NATS_ADDRS" default:"nats://localhost:4222"`
+		Codec    string        `envconfig:"NATS_CODEC" default:"proto"`
 		Timeout  time.Duration `envconfig:"NATS_TIMEOUT" default:"10s"`
 		Username string        `envconfig:"NATS_USERNAME"`
 		Password string        `envconfig:"NATS_PASSWORD"`
@@ -22,7 +22,7 @@ type (
 )
 
 const (
-	defaultAddr = "nats:4222"
+	defaultAddr = "nats://localhost:4222"
 )
 
 // ReadConfigFromEnv read NATS configuration from environment variables.
@@ -47,7 +47,7 @@ func FromConfig(conf Config) Option {
 		if conf.Username != "" {
 			opts.opts = append(opts.opts, nats.UserInfo(conf.Username, conf.Password))
 		}
-		opts.codec = encoding.GetCodec(conf.Encoder)
+		opts.codec = encoding.GetCodec(conf.Codec)
 	}
 }
 

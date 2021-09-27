@@ -71,7 +71,7 @@ func (r *Redis) Delete(ctx context.Context, key string) error {
 	return nil
 }
 
-// HealthCheck return health check function for checking health.
+// CheckHealth return health check function for checking health.
 func (r *Redis) CheckHealth(ctx context.Context) error {
 	return r.conn.Ping(ctx).Err()
 }

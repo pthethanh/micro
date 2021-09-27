@@ -36,7 +36,6 @@ type (
 		IdleCheckFrequency time.Duration `envconfig:"REDIS_IDLE_CHECK_FREQUENCY"`
 
 		// Only cluster clients.
-
 		MaxRedirects   int  `envconfig:"REDIS_MAX_REDIRECTS"`
 		ReadOnly       bool `envconfig:"REDIS_READ_ONLY"`
 		RouteByLatency bool `envconfig:"REDIS_ROUTE_BY_LATENCY"`

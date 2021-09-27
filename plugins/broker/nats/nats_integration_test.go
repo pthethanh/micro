@@ -104,7 +104,7 @@ func TestBrokerHealthCheck(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer b.Close(context.Background())
-	if err := b.HealthCheck()(context.Background()); err != nil {
+	if err := b.CheckHealth(context.Background()); err != nil {
 		t.Fatalf("got health check failed, want health check success")
 	}
 }
