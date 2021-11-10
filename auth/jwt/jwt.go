@@ -7,7 +7,7 @@ import (
 
 	"github.com/pthethanh/micro/auth"
 
-	"github.com/golang-jwt/jwt"
+	"github.com/golang-jwt/jwt/v4"
 	"google.golang.org/grpc/metadata"
 )
 
