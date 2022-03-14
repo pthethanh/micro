@@ -22,8 +22,6 @@ micro is built around gRPC. It exposes both gRPC and REST API over 1 single port
 
 Currently micro comes with a collection of plugins that can be found [here](https://github.com/pthethanh/micro/tree/master/plugins)
 
-*Note: I've been adding new improvements as well as changing the old APIs to make the code more readable. Since I'm not quite sure if anyone is using this project other than me, hence backward compatibility is not guaranteed 100% for now. Please use with your own risks.*
-
 ## Getting Started
 
 ### Start your own
