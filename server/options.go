@@ -389,7 +389,7 @@ func Web(pathPrefix, dir, index string) Option {
 // Recovery is an option allows user to add an ability to recover a handler/API from a panic.
 // This applies for both unary and stream handlers/APIs.
 // If the provided error handler is nil, a default error handler will be used.
-func Recovery(handler func(context.Context, interface{}) error) Option {
+func Recovery(handler func(context.Context, any) error) Option {
 	return func(opts *Server) {
 		if handler == nil {
 			if opts.log == nil {
@@ -529,8 +529,8 @@ func ShutdownHook(path string) Option {
 
 // recoveryHandler print the context log to the configured writer and return
 // a general error to the caller.
-func recoveryHandler(l log.Logger) func(context.Context, interface{}) error {
-	return func(ctx context.Context, p interface{}) error {
+func recoveryHandler(l log.Logger) func(context.Context, any) error {
+	return func(ctx context.Context, p any) error {
 		l.Context(ctx).Errorf("server: panic recovered, err: %v", p)
 		return status.Errorf(codes.Internal, codes.Internal.String())
 	}

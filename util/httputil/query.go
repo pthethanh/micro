@@ -39,7 +39,7 @@ func NewQueryEncoder(tag string) *QueryEncoder {
 //
 // The second parameter is a map, typically url.Values from an HTTP request.
 // Keys are "paths" in dotted notation to the struct fields and nested structs.
-func DecodeQuery(dst interface{}, src map[string][]string) error {
+func DecodeQuery(dst any, src map[string][]string) error {
 	dc := schema.NewDecoder()
 	dc.SetAliasTag(defaultQueryTag)
 	dc.IgnoreUnknownKeys(true)
@@ -50,7 +50,7 @@ func DecodeQuery(dst interface{}, src map[string][]string) error {
 // EncodeQuery encodes a struct into map[string][]string.
 //
 // Intended for use with url.Values.
-func EncodeQuery(src interface{}, dst map[string][]string) error {
+func EncodeQuery(src any, dst map[string][]string) error {
 	ec := schema.NewEncoder()
 	ec.SetAliasTag(defaultQueryTag)
 	return ec.Encode(src, dst)

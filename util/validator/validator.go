@@ -42,22 +42,22 @@ func Root() *Validator {
 }
 
 // Validate a struct exposed fields base on the definition of validate tag.
-func (validator *Validator) Validate(v interface{}) error {
+func (validator *Validator) Validate(v any) error {
 	return validator.v.Struct(v)
 }
 
 // ValidatePartial validates the fields passed in only, ignoring all others.
-func (validator *Validator) ValidatePartial(v interface{}, fields ...string) error {
+func (validator *Validator) ValidatePartial(v any, fields ...string) error {
 	return validator.v.StructPartial(v, fields...)
 }
 
 // ValidateExcept validates all the fields except the given fields.
-func (validator *Validator) ValidateExcept(v interface{}, fields ...string) error {
+func (validator *Validator) ValidateExcept(v any, fields ...string) error {
 	return validator.v.StructExcept(v, fields...)
 }
 
 // Var validates a single variable using tag style validation.
-func (validator *Validator) Var(field interface{}, tag string) error {
+func (validator *Validator) Var(field any, tag string) error {
 	return validator.v.Var(field, tag)
 }
 

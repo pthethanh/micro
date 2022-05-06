@@ -57,7 +57,7 @@ func (l *Logrus) Init(opts ...Option) error {
 	logger.SetFormatter(f)
 	logger.SetLevel(logrus.Level(level))
 	logger.SetOutput(out)
-	fields := map[string]interface{}{}
+	fields := map[string]any{}
 	for k, v := range options.Fields {
 		fields[k] = v
 	}
@@ -66,57 +66,57 @@ func (l *Logrus) Init(opts ...Option) error {
 }
 
 // Info print info
-func (l *Logrus) Info(args ...interface{}) {
+func (l *Logrus) Info(args ...any) {
 	l.logger.Infoln(args...)
 }
 
 // Debug print debug
-func (l *Logrus) Debug(v ...interface{}) {
+func (l *Logrus) Debug(v ...any) {
 	l.logger.Debugln(v...)
 }
 
 // Warn print warning
-func (l *Logrus) Warn(v ...interface{}) {
+func (l *Logrus) Warn(v ...any) {
 	l.logger.Warnln(v...)
 }
 
 // Error print error
-func (l *Logrus) Error(v ...interface{}) {
+func (l *Logrus) Error(v ...any) {
 	l.logger.Errorln(v...)
 }
 
 // Panic panic
-func (l *Logrus) Panic(v ...interface{}) {
+func (l *Logrus) Panic(v ...any) {
 	l.logger.Panicln(v...)
 }
 
 // Infof print info with format.
-func (l *Logrus) Infof(format string, v ...interface{}) {
+func (l *Logrus) Infof(format string, v ...any) {
 	l.logger.Infof(format, v...)
 }
 
 // Debugf print debug with format.
-func (l *Logrus) Debugf(format string, v ...interface{}) {
+func (l *Logrus) Debugf(format string, v ...any) {
 	l.logger.Debugf(format, v...)
 }
 
 // Warnf print warning with format.
-func (l *Logrus) Warnf(format string, v ...interface{}) {
+func (l *Logrus) Warnf(format string, v ...any) {
 	l.logger.Warnf(format, v...)
 }
 
 // Errorf print error with format.
-func (l *Logrus) Errorf(format string, v ...interface{}) {
+func (l *Logrus) Errorf(format string, v ...any) {
 	l.logger.Errorf(format, v...)
 }
 
 // Panicf panic with format.
-func (l *Logrus) Panicf(format string, v ...interface{}) {
+func (l *Logrus) Panicf(format string, v ...any) {
 	l.logger.Panicf(format, v...)
 }
 
 // Fields return a new logger with fields.
-func (l *Logrus) Fields(kv ...interface{}) Logger {
+func (l *Logrus) Fields(kv ...any) Logger {
 	return &Logrus{
 		logger: l.logger.WithFields(logrus.Fields(fields(kv...))),
 	}
@@ -128,7 +128,7 @@ func (l *Logrus) Context(ctx context.Context) Logger {
 		return l
 	}
 	if logger, ok := ctx.Value(loggerKey).(Logger); ok {
-		kv := make([]interface{}, 0)
+		kv := make([]any, 0)
 		for k, v := range l.logger.Data {
 			kv = append(kv, k, v)
 		}

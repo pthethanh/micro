@@ -23,17 +23,17 @@ func TestMock(t *testing.T) {
 
 		code int
 		// too lazy, let assume it's a map for easier to test.
-		body       map[string]interface{}
+		body       map[string]any
 		resHeaders map[string]string
-		verify     func(body map[string]interface{}, t *testing.T)
+		verify     func(body map[string]any, t *testing.T)
 	}{
 		{
 			name:   "get users ok - data from file",
 			method: http.MethodGet,
 			path:   "/users",
 			code:   http.StatusOK,
-			body: map[string]interface{}{
-				"users": []map[string]interface{}{
+			body: map[string]any{
+				"users": []map[string]any{
 					{
 						"id":   "1",
 						"name": "jack",
@@ -47,8 +47,8 @@ func TestMock(t *testing.T) {
 				},
 			},
 			resHeaders: map[string]string{"session_id": "123"},
-			verify: func(body map[string]interface{}, t *testing.T) {
-				if v, ok := body["users"].([]interface{}); !ok || len(v) != 2 {
+			verify: func(body map[string]any, t *testing.T) {
+				if v, ok := body["users"].([]any); !ok || len(v) != 2 {
 					t.Errorf("got len(users)=%v, want len(users)=%v", len(v), 2)
 				}
 			},
@@ -58,7 +58,7 @@ func TestMock(t *testing.T) {
 			method: http.MethodDelete,
 			path:   "/users",
 			code:   http.StatusNotFound,
-			body: map[string]interface{}{
+			body: map[string]any{
 				"code": 5,
 			},
 		},
@@ -67,7 +67,7 @@ func TestMock(t *testing.T) {
 			method: http.MethodGet,
 			path:   "/users/1",
 			code:   http.StatusOK,
-			body: map[string]interface{}{
+			body: map[string]any{
 				"id":   "1",
 				"name": "jack",
 				"age":  22,
@@ -79,7 +79,7 @@ func TestMock(t *testing.T) {
 			path:    "/users/1",
 			code:    http.StatusUnauthorized,
 			headers: map[string]string{"authorization": "not_ok"},
-			body: map[string]interface{}{
+			body: map[string]any{
 				"code": 16,
 			},
 		},
@@ -90,7 +90,7 @@ func TestMock(t *testing.T) {
 			code:       http.StatusOK,
 			headers:    map[string]string{"authorization": "ok"},
 			resHeaders: map[string]string{"session_id": "123"},
-			body: map[string]interface{}{
+			body: map[string]any{
 				"code": 0,
 			},
 		},
@@ -99,7 +99,7 @@ func TestMock(t *testing.T) {
 			method: http.MethodGet,
 			path:   "/employees",
 			code:   http.StatusNotFound,
-			body: map[string]interface{}{
+			body: map[string]any{
 				"code":    5,
 				"message": "not found",
 			},
@@ -109,7 +109,7 @@ func TestMock(t *testing.T) {
 			method: http.MethodGet,
 			path:   "/employees/1",
 			code:   http.StatusNotFound,
-			body: map[string]interface{}{
+			body: map[string]any{
 				"code": 2,
 			},
 		},
@@ -132,7 +132,7 @@ func TestMock(t *testing.T) {
 			if res.StatusCode != c.code {
 				t.Fatalf("got status=%d, want status=%d", res.StatusCode, c.code)
 			}
-			var body map[string]interface{}
+			var body map[string]any
 			if err := json.NewDecoder(res.Body).Decode(&body); err != nil {
 				t.Error(err)
 			}

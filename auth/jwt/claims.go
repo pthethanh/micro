@@ -39,9 +39,9 @@ type Claims struct {
 	UpdatedAt           int64  `json:"updated_at,omitempty"`
 
 	// Custom attributes claims.
-	Scope    string                 `json:"scope,omitempty"`
-	Admin    bool                   `json:"admin,omitempty"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	Scope    string         `json:"scope,omitempty"`
+	Admin    bool           `json:"admin,omitempty"`
+	Metadata map[string]any `json:"metadata,omitempty"`
 }
 
 // ContainScopes checks if `scopes` are present within the Claim.Scope.

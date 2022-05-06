@@ -21,21 +21,21 @@ func Get(tag string) *Validator {
 }
 
 // Validate a struct exposed fields base on the definition of validate tag.
-func Validate(v interface{}) error {
+func Validate(v any) error {
 	return Root().Validate(v)
 }
 
 // ValidatePartial validates the fields passed in only, ignoring all others.
-func ValidatePartial(v interface{}, fields ...string) error {
+func ValidatePartial(v any, fields ...string) error {
 	return Root().ValidatePartial(v, fields...)
 }
 
 // ValidateExcept validates all the fields except the given fields.
-func ValidateExcept(v interface{}, fields ...string) error {
+func ValidateExcept(v any, fields ...string) error {
 	return Root().ValidateExcept(v, fields...)
 }
 
 // Var validates a single variable using tag style validation.
-func Var(field interface{}, tag string) error {
+func Var(field any, tag string) error {
 	return Root().Var(field, tag)
 }

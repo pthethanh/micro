@@ -14,7 +14,7 @@ type (
 		s     time.Time
 		t     time.Time
 		m     map[string]time.Duration
-		meta  map[string]interface{}
+		meta  map[string]any
 		mutex *sync.Mutex
 	}
 
@@ -23,18 +23,18 @@ type (
 		Context  string                   `json:"context"`
 		Duration time.Duration            `json:"duration"`
 		Spans    map[string]time.Duration `json:"spans"`
-		Meta     map[string]interface{}   `json:"meta"`
+		Meta     map[string]any           `json:"meta"`
 	}
 )
 
 // NewRecorder start and return new recorder of the given execution context.
 // Additional metadata can be provided as key/value pairs.
-func NewRecorder(context string, meta ...interface{}) *Recorder {
+func NewRecorder(context string, meta ...any) *Recorder {
 	r := &Recorder{
 		ctx:   context,
 		m:     make(map[string]time.Duration),
 		mutex: &sync.Mutex{},
-		meta:  make(map[string]interface{}),
+		meta:  make(map[string]any),
 	}
 	for i := 0; i < len(meta)/2; i++ {
 		r.meta[fmt.Sprintf("%v", meta[i])] = meta[i+1]

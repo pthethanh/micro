@@ -193,7 +193,7 @@ func (s *MServer) Watch(req *CheckRequest, srv WatchServer) error {
 // ServeHTTP implements health.Server.
 func (s *MServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	service := r.URL.Query().Get("service")
-	data := make(map[string]interface{})
+	data := make(map[string]any)
 	check := func(service string) Status {
 		rs, err := s.Check(r.Context(), &CheckRequest{
 			Service: service,

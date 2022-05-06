@@ -132,9 +132,9 @@ func TestServerAPIs(t *testing.T) {
 		name         string
 		path         string
 		method       string
-		body         interface{}
+		body         any
 		code         int
-		response_map map[string]interface{}
+		response_map map[string]any
 		response_str string
 	}{
 		{
@@ -142,7 +142,7 @@ func TestServerAPIs(t *testing.T) {
 			path:   "/internal/health",
 			method: http.MethodGet,
 			code:   http.StatusOK,
-			response_map: map[string]interface{}{
+			response_map: map[string]any{
 				"status": 1,
 			},
 		},
@@ -158,7 +158,7 @@ func TestServerAPIs(t *testing.T) {
 			path:   "/api/v1/test",
 			method: http.MethodGet,
 			code:   http.StatusOK,
-			response_map: map[string]interface{}{
+			response_map: map[string]any{
 				"name": "test",
 			},
 		},
@@ -167,7 +167,7 @@ func TestServerAPIs(t *testing.T) {
 			path:   "/api/v1/test1",
 			method: http.MethodPost,
 			code:   http.StatusCreated,
-			response_map: map[string]interface{}{
+			response_map: map[string]any{
 				"status": "ok",
 			},
 		},
@@ -176,7 +176,7 @@ func TestServerAPIs(t *testing.T) {
 			path:   "/api/v1/test?name=status",
 			method: http.MethodGet,
 			code:   http.StatusOK,
-			response_map: map[string]interface{}{
+			response_map: map[string]any{
 				"status": "ok",
 			},
 		},
@@ -185,7 +185,7 @@ func TestServerAPIs(t *testing.T) {
 			path:   "/api/v2/test",
 			method: http.MethodGet,
 			code:   http.StatusOK,
-			response_map: map[string]interface{}{
+			response_map: map[string]any{
 				"name": "api",
 			},
 		},
@@ -227,9 +227,9 @@ func TestServerAPIs(t *testing.T) {
 	}
 }
 
-func validateJSONResponse(expect map[string]interface{}) func(rs *http.Response) error {
+func validateJSONResponse(expect map[string]any) func(rs *http.Response) error {
 	return func(res *http.Response) error {
-		var body map[string]interface{}
+		var body map[string]any
 		if err := json.NewDecoder(res.Body).Decode(&body); err != nil {
 			return err
 		}
@@ -257,7 +257,7 @@ func validateStringResponse(sub string) func(rs *http.Response) error {
 	}
 }
 
-func testHTTP(path string, method string, body interface{}, code int, f httpValidationFunc) error {
+func testHTTP(path string, method string, body any, code int, f httpValidationFunc) error {
 	b, err := json.Marshal(body)
 	if err != nil {
 		return err

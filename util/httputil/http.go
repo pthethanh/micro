@@ -23,7 +23,7 @@ func WriteError(w http.ResponseWriter, code int, err error) {
 }
 
 // WriteJSON write status and JSON data to http ResponseWriter.
-func WriteJSON(w http.ResponseWriter, code int, data interface{}) {
+func WriteJSON(w http.ResponseWriter, code int, data any) {
 	if err, ok := data.(error); ok {
 		WriteError(w, code, err)
 		return

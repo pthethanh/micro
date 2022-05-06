@@ -81,7 +81,7 @@ func TestHealthCheck(t *testing.T) {
 		if w.Result().StatusCode != http.StatusOK {
 			t.Fatalf("got status_code=%d, want status_code=%d", w.Code, http.StatusOK)
 		}
-		var m map[string]interface{}
+		var m map[string]any
 		if err := json.NewDecoder(w.Body).Decode(&m); err != nil {
 			t.Fatal(err)
 		}

@@ -13,7 +13,7 @@ import (
 // a context with correlation_id for tracing. It will try to looks for value of X-Correlation-ID or X-Request-ID
 // in the metadata of the incoming request. If no value is provided, a new UUID will be generated.
 func CorrelationIDStreamInterceptor() grpc.StreamServerInterceptor {
-	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+	return func(srv any, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 		id, ok := contextutil.CorrelationIDFromContext(ss.Context())
 		if ok {
 			return handler(srv, ss)
@@ -33,7 +33,7 @@ func CorrelationIDStreamInterceptor() grpc.StreamServerInterceptor {
 // a context with correlation_id for tracing. It will try to looks for value of X-Correlation-ID or X-Request-ID
 // in the metadata of the incoming request. If no value is provided, a new UUID will be generated.
 func CorrelationIDUnaryInterceptor() grpc.UnaryServerInterceptor {
-	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
 		id, ok := contextutil.CorrelationIDFromContext(ctx)
 		if ok {
 			return handler(ctx, req)

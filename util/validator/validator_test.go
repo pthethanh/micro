@@ -24,7 +24,7 @@ func TestValidatePartial(t *testing.T) {
 	cases := []struct {
 		name     string
 		tag      string
-		value    interface{}
+		value    any
 		fields   []string
 		excepts  []string
 		field    bool

@@ -35,11 +35,11 @@ func newCodec() *codec {
 	}
 }
 
-func (m *codec) Marshal(v interface{}) ([]byte, error) {
+func (m *codec) Marshal(v any) ([]byte, error) {
 	return m.m.Marshal(v)
 }
 
-func (m *codec) Unmarshal(data []byte, v interface{}) error {
+func (m *codec) Unmarshal(data []byte, v any) error {
 	return m.m.Unmarshal(data, v)
 }
 

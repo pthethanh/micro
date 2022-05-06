@@ -7,16 +7,16 @@ import (
 
 type (
 	// JSONObject is a map prepresent a struct information.
-	JSONObject map[string]interface{}
+	JSONObject map[string]any
 )
 
 // ToJSONObject convert a struct to a json object/map.
-func ToJSONObject(v interface{}) (JSONObject, error) {
+func ToJSONObject(v any) (JSONObject, error) {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return nil, err
 	}
-	m := make(map[string]interface{})
+	m := make(map[string]any)
 	if err := json.Unmarshal(b, &m); err != nil {
 		return nil, err
 	}
@@ -33,8 +33,8 @@ func (m JSONObject) Keys() []string {
 }
 
 // Values return values of the json object.
-func (m JSONObject) Values() []interface{} {
-	v := make([]interface{}, 0)
+func (m JSONObject) Values() []any {
+	v := make([]any, 0)
 	for _, vv := range m {
 		v = append(v, vv)
 	}
@@ -51,7 +51,7 @@ func (m JSONObject) StringValues() []string {
 }
 
 // Sets set value of the keys to the given value.
-func (m JSONObject) Sets(keys []string, value interface{}) {
+func (m JSONObject) Sets(keys []string, value any) {
 	for _, k := range keys {
 		m[k] = value
 	}

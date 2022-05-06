@@ -72,7 +72,7 @@ func ParseFromMetadata(ctx context.Context, secret []byte, c jwt.Claims) error {
 
 // Parse and validate a JWT string.
 func Parse(t string, s []byte, c jwt.Claims) error {
-	_, err := jwt.ParseWithClaims(t, c, func(token *jwt.Token) (interface{}, error) {
+	_, err := jwt.ParseWithClaims(t, c, func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, auth.ErrInvalidToken
 		}

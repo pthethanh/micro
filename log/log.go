@@ -16,38 +16,38 @@ type (
 		Init(...Option) error
 
 		// Infof print info with format.
-		Infof(format string, v ...interface{})
+		Infof(format string, v ...any)
 
 		// Debugf print debug with format.
-		Debugf(format string, v ...interface{})
+		Debugf(format string, v ...any)
 
 		// Warnf print warning with format.
-		Warnf(format string, v ...interface{})
+		Warnf(format string, v ...any)
 
 		// Errorf print error with format.
-		Errorf(format string, v ...interface{})
+		Errorf(format string, v ...any)
 
 		// Panicf panic with format.
-		Panicf(format string, v ...interface{})
+		Panicf(format string, v ...any)
 
 		// Info print info.
-		Info(v ...interface{})
+		Info(v ...any)
 
 		// Debug print debug.
-		Debug(v ...interface{})
+		Debug(v ...any)
 
 		// Warn print warning.
-		Warn(v ...interface{})
+		Warn(v ...any)
 
 		// Error print error.
-		Error(v ...interface{})
+		Error(v ...any)
 
 		// Panic panic.
-		Panic(v ...interface{})
+		Panic(v ...any)
 
 		// Fields return new logger with the given fields.
 		// The kv should be provided as key values pairs where key is a string.
-		Fields(kv ...interface{}) Logger
+		Fields(kv ...any) Logger
 
 		// Context provide a way to get a context logger,  i.e... with request-id.
 		Context(ctx context.Context) Logger
@@ -167,8 +167,8 @@ func (opts Options) GetFormat() (Format, error) {
 	return opts.Format, nil
 }
 
-func fields(kv ...interface{}) map[string]interface{} {
-	fields := make(map[string]interface{})
+func fields(kv ...any) map[string]any {
+	fields := make(map[string]any)
 	ood := len(kv) % 2
 	for i := 0; i < len(kv)-ood; i += 2 {
 		fields[fmt.Sprintf("%v", kv[i])] = kv[i+1]

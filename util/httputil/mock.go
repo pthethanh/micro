@@ -29,7 +29,7 @@ type (
 		Status  int               `yaml:"status" json:"status"`
 		Headers map[string]string `yaml:"headers" json:"headers"`
 		// Body can be a file using prefix file://path.
-		Body interface{} `yaml:"body" json:"body"`
+		Body any `yaml:"body" json:"body"`
 	}
 
 	// MockHandler hold HTTP mock specification.

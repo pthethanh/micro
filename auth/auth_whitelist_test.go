@@ -110,7 +110,7 @@ func TestAuthWhiteList(t *testing.T) {
 			// unary
 			_, err = auth.UnaryInterceptor(wa)(c.ctx, nil, &grpc.UnaryServerInfo{
 				FullMethod: c.method,
-			}, grpc.UnaryHandler(func(ctx context.Context, req interface{}) (interface{}, error) {
+			}, grpc.UnaryHandler(func(ctx context.Context, req any) (any, error) {
 				return nil, nil
 			}))
 			if err != c.err {
@@ -119,7 +119,7 @@ func TestAuthWhiteList(t *testing.T) {
 			// stream
 			err = auth.StreamInterceptor(wa)(nil, &serverStream{ctx: c.ctx}, &grpc.StreamServerInfo{
 				FullMethod: c.method,
-			}, grpc.StreamHandler(func(srv interface{}, stream grpc.ServerStream) error {
+			}, grpc.StreamHandler(func(srv any, stream grpc.ServerStream) error {
 				return nil
 			}))
 			if err != c.err {

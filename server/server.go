@@ -320,7 +320,7 @@ func (server *Server) registerHTTPHandlers(ctx context.Context, router *mux.Rout
 	for _, r := range server.routes {
 		var route *mux.Route
 		h := r.h
-		info := make([]interface{}, 0)
+		info := make([]any, 0)
 		for _, interceptor := range r.interceptors {
 			h = interceptor(h)
 		}

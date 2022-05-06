@@ -16,7 +16,7 @@ import (
 // an authentication check for each request by using
 // Authenticator.Authenticate(ctx context.Context).
 func StreamInterceptor(auth Authenticator) grpc.StreamServerInterceptor {
-	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+	return func(srv any, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 		var newCtx context.Context
 		var err error
 		a := auth
@@ -42,7 +42,7 @@ func StreamInterceptor(auth Authenticator) grpc.StreamServerInterceptor {
 // an authentication check for each request by using
 // Authenticator.Authenticate(ctx context.Context).
 func UnaryInterceptor(auth Authenticator) grpc.UnaryServerInterceptor {
-	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 		var newCtx context.Context
 		var err error
 		a := auth

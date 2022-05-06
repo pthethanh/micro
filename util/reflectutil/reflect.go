@@ -15,7 +15,7 @@ type (
 	// GetFieldNamesFromTagsRequest hold request information
 	// for getting field names from tags' values.
 	GetFieldNamesFromTagsRequest struct {
-		Value     interface{}
+		Value     any
 		Tag       string
 		Resolver  TagResolverFunc
 		TagValues []string
@@ -24,7 +24,7 @@ type (
 	// GetTagsFromTagsRequest hold request information
 	// for getting tags' values from another tags' values.
 	GetTagsFromTagsRequest struct {
-		Value       interface{}
+		Value       any
 		SrcTag      string
 		SrcResolver TagResolverFunc
 		DstTag      string
@@ -111,7 +111,7 @@ func GetTagsFromTags(req GetTagsFromTagsRequest) M {
 }
 
 // tagsToFieldNames write the mapping between tags and field names to the given res map.
-func tagsToFieldNames(res map[string]string, req interface{}, namePrefix string, tagPrefix, tag string, resolver TagResolverFunc) {
+func tagsToFieldNames(res map[string]string, req any, namePrefix string, tagPrefix, tag string, resolver TagResolverFunc) {
 	if req == nil {
 		return
 	}
@@ -151,7 +151,7 @@ func tagsToFieldNames(res map[string]string, req interface{}, namePrefix string,
 }
 
 // tagsToFieldNames write the mapping between tags and field names to the given res map.
-func tagsToTags(res map[string]string, req interface{}, prefix1 string, tag1 string, resolver1 TagResolverFunc, prefix2, tag2 string, resolver2 TagResolverFunc) {
+func tagsToTags(res map[string]string, req any, prefix1 string, tag1 string, resolver1 TagResolverFunc, prefix2, tag2 string, resolver2 TagResolverFunc) {
 	if req == nil {
 		return
 	}

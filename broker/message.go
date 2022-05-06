@@ -23,7 +23,7 @@ const (
 // Message type will be automatically retrieved.
 // ContentType is codec name: json, proto,... which is already registered
 // in advance via encoding.RegisterCodec.
-func NewMessage(message interface{}, contentType string, headers ...string) (*Message, error) {
+func NewMessage(message any, contentType string, headers ...string) (*Message, error) {
 	if contentType == "" {
 		contentType = encoding.ContentTypeJSON
 	}
@@ -54,14 +54,14 @@ func Must(m *Message, err error) *Message {
 }
 
 // GetMessageType return full type name of the given value without pointer indicator (*).
-func GetMessageType(v interface{}) string {
+func GetMessageType(v any) string {
 	return strings.TrimPrefix(reflect.TypeOf(v).String(), "*")
 }
 
 // UnmarshalBodyTo try to unmarshal the body of the message to the given pointer
 // based on the content-type in the message's header.
 // Use json codec for unmarshal if content-type is empty.
-func (x *Message) UnmarshalBodyTo(v interface{}) error {
+func (x *Message) UnmarshalBodyTo(v any) error {
 	if m := encoding.GetCodec(x.GetContentType()); m != nil {
 		return m.Unmarshal(x.Body, v)
 	}
@@ -71,7 +71,7 @@ func (x *Message) UnmarshalBodyTo(v interface{}) error {
 // MarshalToBody marshal the given value to the message body
 // based on the registered content-type and the registered codec.
 // Use json codec for marshal if content-type is empty.
-func (x *Message) MarshalToBody(v interface{}) error {
+func (x *Message) MarshalToBody(v any) error {
 	if m := encoding.GetCodec(x.GetContentType()); m != nil {
 		b, err := m.Marshal(v)
 		if err != nil {
