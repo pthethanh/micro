@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/pthethanh/micro/util/reflectutil"
+	"golang.org/x/exp/maps"
 )
 
 func TestTagsToStructFields(t *testing.T) {
@@ -69,7 +70,7 @@ func TestTagsToStructFields(t *testing.T) {
 			if len(got) != len(c.want) {
 				t.Errorf("got fields=%s, want fields=%s", got, c.want)
 			}
-			values := got.Values()
+			values := maps.Values(got)
 			sort.Strings(values)
 			sort.Strings(c.want)
 			for i := 0; i < len(got); i++ {
@@ -150,7 +151,7 @@ func TestTagsToTags(t *testing.T) {
 			if len(got) != len(c.want) {
 				t.Errorf("got tags=%s, want tags=%s", got, c.want)
 			}
-			values := got.Values()
+			values := maps.Values(got)
 			sort.Strings(values)
 			sort.Strings(c.want)
 			for i := 0; i < len(got); i++ {
@@ -184,7 +185,7 @@ func TestTagsToFieldNamesNilValues(t *testing.T) {
 	if len(got) != len(want) {
 		t.Fatalf("got fields=%s, want fields=%s", got, want)
 	}
-	values := got.Values()
+	values := maps.Values(got)
 	sort.Strings(values)
 	sort.Strings(want)
 	for i := 0; i < len(got); i++ {
@@ -226,7 +227,7 @@ func TestTagsToTagsNilValues(t *testing.T) {
 	if len(got) != len(want) {
 		t.Fatalf("got tags=%s, want tags=%s", got, want)
 	}
-	values := got.Values()
+	values := maps.Values(got)
 	sort.Strings(values)
 	sort.Strings(want)
 	for i := 0; i < len(got); i++ {
