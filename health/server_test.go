@@ -12,6 +12,7 @@ import (
 
 	"github.com/pthethanh/micro/health"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/test/bufconn"
 )
@@ -51,7 +52,7 @@ func TestHealthCheck(t *testing.T) {
 		dialer := func(context.Context, string) (net.Conn, error) {
 			return lis.Dial()
 		}
-		conn, err := grpc.Dial("", grpc.WithContextDialer(dialer), grpc.WithInsecure())
+		conn, err := grpc.Dial("", grpc.WithContextDialer(dialer), grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
 			t.Fatal(err)
 		}

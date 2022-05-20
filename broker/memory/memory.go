@@ -172,7 +172,7 @@ func (br *Broker) Close(ctx context.Context) error {
 	syncutil.WaitCtx(ctx, 10*time.Millisecond, func(ctx context.Context) {
 		br.wg.Wait()
 	})
-	// unsubscribe all subsribers.
+	// unsubscribe all subscribers.
 	for _, subs := range br.subs {
 		for _, sub := range subs {
 			sub.Unsubscribe()

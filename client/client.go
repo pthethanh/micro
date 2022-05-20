@@ -15,6 +15,7 @@ import (
 	"google.golang.org/grpc"
 
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 	_ "google.golang.org/grpc/health" // enable health check
 	"google.golang.org/grpc/metadata"
 )
@@ -57,7 +58,7 @@ func DialOptionsFromConfig(conf *Config) []grpc.DialOption {
 	if conf.TLSCertFile != "" {
 		opts = append(opts, WithTLSTransportCredentials(conf.TLSCertFile))
 	} else {
-		opts = append(opts, grpc.WithInsecure())
+		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
 	if conf.Address != "" {
 		opts = append(opts, addressOption{Address: conf.Address})
@@ -85,7 +86,7 @@ func DialContext(ctx context.Context, address string, options ...grpc.DialOption
 	}
 	opts := append([]grpc.DialOption{}, options...)
 	if len(opts) == 0 {
-		opts = append(opts, grpc.WithInsecure())
+		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
 	log.Context(ctx).Infof("dialing to address: %s", address)
 	conn, err := grpc.DialContext(ctx, address, opts...)
@@ -148,7 +149,7 @@ func GetAddressFromEnv(opts ...config.ReadOption) string {
 }
 
 // NewContext return new out going context with the given metadata,
-// it also copies all associated metadata in the incoming/outcomming context to the new context.
+// it also copies all associated metadata in the incoming/outcoming context to the new context.
 // NewContext panics if len(kv) is odd.
 func NewContext(ctx context.Context, kv ...string) context.Context {
 	md := metadata.Pairs(kv...)

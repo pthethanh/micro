@@ -60,7 +60,7 @@ func (a *SimpleWhiteListAuthenticator) IsWhiteListed(path string) bool {
 }
 
 // WhiteListRegexp is white list function that ignore authentication process
-// for a request if its path matchs one of the provided regular expressions.
+// for a request if its path matches one of the provided regular expressions.
 // This function panic if the regular expressions failed to compile.
 func WhiteListRegexp(patterns ...string) WhiteListFunc {
 	regs := make([]*regexp.Regexp, 0)

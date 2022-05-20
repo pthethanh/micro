@@ -18,6 +18,7 @@ import (
 	"github.com/pthethanh/micro/log"
 	"github.com/pthethanh/micro/server"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/test/bufconn"
 	"google.golang.org/grpc/test/grpc_testing"
 )
@@ -211,7 +212,7 @@ func TestServerAPIs(t *testing.T) {
 	}
 
 	// test grpc
-	conn, err := grpc.Dial(addr, grpc.WithInsecure())
+	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		t.Fatal(err)
 	}

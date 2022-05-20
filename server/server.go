@@ -26,6 +26,7 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type (
@@ -160,8 +161,8 @@ func (server *Server) ListenAndServeContext(ctx context.Context, services ...Ser
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(creds))
 	}
 	if !isSecured {
-		server.log.Context(ctx).Warn("server: insecured mode is enabled.")
-		dialOpts = append(dialOpts, grpc.WithInsecure())
+		server.log.Context(ctx).Warn("server: insecure mode is enabled.")
+		dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
 	// expose health services via gRPC.
 	services = append(services, server.healthSrv)

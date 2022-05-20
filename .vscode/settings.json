@@ -1,5 +1,37 @@
 {
     "gopls": {
         "build.experimentalWorkspaceModule": true
-    }
+    },
+    "cSpell.words": [
+        "acked",
+        "backoff",
+        "barfoo",
+        "birthdate",
+        "bufconn",
+        "contextutil",
+        "Debugf",
+        "envconfig",
+        "genproto",
+        "googleapis",
+        "grpcgateway",
+        "hopt",
+        "HTTPAPI",
+        "Logrus",
+        "microservices",
+        "myservice",
+        "nats",
+        "newkey",
+        "notfound",
+        "opentracing",
+        "outcoming",
+        "pluggable",
+        "promhttp",
+        "reflectutil",
+        "structs",
+        "syncutil",
+        "testdata",
+        "timeutil",
+        "Warnf",
+        "zoneinfo"
+    ]
 }

@@ -61,7 +61,7 @@ type (
 		WebIndex  string `envconfig:"WEB_INDEX" default:"index.html"`
 		WebPrefix string `envconfig:"WEB_PREFIX" default:"/"`
 
-		// JWTSecret is a short way to enable JWT Authentictor with the secret.
+		// JWTSecret is a short way to enable JWT Authenticator with the secret.
 		JWTSecret string `envconfig:"JWT_SECRET"`
 		// ContextLogger is an option to enable context logger with request-id.
 		ContextLogger bool `envconfig:"CONTEXT_LOGGER" default:"true"`
