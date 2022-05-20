@@ -79,7 +79,7 @@ func GetFieldNamesFromTags(req GetFieldNamesFromTagsRequest) map[string]string {
 	return rs
 }
 
-// GetTagsFromTags get tag mapping values coresponding to the given tag values.
+// GetTagsFromTags get tag mapping values corresponding to the given tag values.
 func GetTagsFromTags(req GetTagsFromTagsRequest) map[string]string {
 	if req.Value == nil {
 		return nil
