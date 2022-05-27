@@ -17,6 +17,8 @@ const (
 	ContentType = "content-type"
 	// MessageType is header key for type of message's body.
 	MessageType = "message-type"
+
+	applicationJSON = "application/json"
 )
 
 // NewMessage create new message from the given information.
@@ -25,7 +27,7 @@ const (
 // in advance via encoding.RegisterCodec.
 func NewMessage(message any, contentType string, headers ...string) (*Message, error) {
 	if contentType == "" {
-		contentType = encoding.ContentTypeJSON
+		contentType = applicationJSON
 	}
 	m := &Message{
 		Header: map[string]string{
@@ -61,26 +63,28 @@ func GetMessageType(v any) string {
 // UnmarshalBodyTo try to unmarshal the body of the message to the given pointer
 // based on the content-type in the message's header.
 // Use json codec for unmarshal if content-type is empty.
-func (x *Message) UnmarshalBodyTo(v any) error {
-	if m := encoding.GetCodec(x.GetContentType()); m != nil {
-		return m.Unmarshal(x.Body, v)
+func (x *Message) UnmarshalBodyTo(ptr any) error {
+	codec, err := x.getCodec()
+	if err != nil {
+		return err
 	}
-	return status.Unimplemented("unregistered codec for content-type: %s", x.GetContentType())
+	return codec.Unmarshal(x.Body, ptr)
 }
 
 // MarshalToBody marshal the given value to the message body
 // based on the registered content-type and the registered codec.
 // Use json codec for marshal if content-type is empty.
 func (x *Message) MarshalToBody(v any) error {
-	if m := encoding.GetCodec(x.GetContentType()); m != nil {
-		b, err := m.Marshal(v)
-		if err != nil {
-			return err
-		}
-		x.Body = b
-		return nil
+	codec, err := x.getCodec()
+	if err != nil {
+		return err
 	}
-	return status.Unimplemented("unregistered codec for content-type: %s", x.GetContentType())
+	b, err := codec.Marshal(v)
+	if err != nil {
+		return err
+	}
+	x.Body = b
+	return nil
 }
 
 // GetContentType return content type configured in the message's header.
@@ -90,6 +94,26 @@ func (x *Message) GetContentType() string {
 		return v
 	}
 	return encoding.ContentTypeJSON
+}
+
+// getCodec return codec based on content type or codec configured in the message's header.
+// Default to be json.
+func (x *Message) getCodec() (encoding.Codec, error) {
+	v, ok := x.Header[ContentType]
+	if !ok || v == "" {
+		return encoding.GetCodec(encoding.ContentTypeJSON), nil
+	}
+	cts := strings.Split(v, ";")
+	ct := strings.Split(cts[0], "/")
+	c := ct[0] // in case of codec name
+	if len(ct) == 2 {
+		c = ct[1] // in case of full content type.
+	}
+	codec := encoding.GetCodec(c)
+	if codec == nil {
+		return nil, status.Unimplemented("unregistered codec for content-type: %s", x.GetContentType())
+	}
+	return codec, nil
 }
 
 // GetMessageType return message type configured in the message's header.
