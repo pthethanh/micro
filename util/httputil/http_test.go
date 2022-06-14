@@ -19,7 +19,7 @@ func TestWrite(t *testing.T) {
 	body := []byte(`{"name":"test"}`)
 	rct := "application/json"
 	httputil.Write(rc, rct, http.StatusOK, body)
-	if bytes.Compare(rc.Body.Bytes(), body) != 0 {
+	if !bytes.Equal(rc.Body.Bytes(), body) {
 		t.Errorf("got body: %s, want body: %s", rc.Body.Bytes(), body)
 	}
 	if ct := rc.Header().Get("Content-Type"); ct != rct {
@@ -39,7 +39,7 @@ func TestWriteJSON(t *testing.T) {
 	httputil.WriteJSON(rc, http.StatusOK, body)
 
 	want := []byte(`{"name":"jack"}`)
-	if bytes.Compare(rc.Body.Bytes(), want) != 0 {
+	if !bytes.Equal(rc.Body.Bytes(), want) {
 		t.Errorf("got body: %s, want body: %s", rc.Body.Bytes(), want)
 	}
 	if ct := rc.Header().Get("Content-Type"); ct != rct {
