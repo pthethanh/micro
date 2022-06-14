@@ -13,7 +13,7 @@ export PATH := $(GOPATH)/bin:$(PATH)
 
 .SILENT:
 
-all: mod_tidy fmt vet test build_plugins
+all: mod_tidy fmt vet test_stress build_plugins
 
 micro: mod_tidy fmt vet test
 
@@ -23,8 +23,11 @@ vet:
 fmt:
 	$(GO_BUILD_ENV) go fmt $(GO_FILES)
 
+test_stress:
+	$(GO_BUILD_ENV) CGO_ENABLED=1 go test $(GO_FILES) -race -cover -count=25
+
 test:
-	$(GO_BUILD_ENV) go test $(GO_FILES) -cover -count=1
+	$(GO_BUILD_ENV) CGO_ENABLED=1 go test $(GO_FILES) -race -cover -count=1
 
 mod_tidy:
 	$(GO_BUILD_ENV) go mod tidy

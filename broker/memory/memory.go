@@ -115,6 +115,7 @@ func (br *Broker) Publish(ctx context.Context, topic string, m *broker.Message, 
 		msg: m,
 	}
 	for _, sub := range subs {
+		sub := sub
 		if sub.opts.Queue != "" {
 			queueSubs[sub.opts.Queue] = append(queueSubs[sub.opts.Queue], sub)
 			continue
@@ -124,6 +125,7 @@ func (br *Broker) Publish(ctx context.Context, topic string, m *broker.Message, 
 	}
 	// queue subscribers, send to only 1 single random subscriber in the list.
 	for _, queueSub := range queueSubs {
+		queueSub := queueSub
 		idx := rand.Intn(len(queueSub))
 		br.ch <- func() error { return queueSub[idx].h(env) }
 	}

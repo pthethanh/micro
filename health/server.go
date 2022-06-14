@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"google.golang.org/grpc"
@@ -31,8 +33,8 @@ type (
 
 	// Config hold server config.
 	Config struct {
-		Interval time.Duration `envconfig:"HEALTH_CHECK_INTERVAL" default:"60s"`
-		Timeout  time.Duration `envconfig:"HEALTH_CHECK_TIMEOUT" default:"1s"`
+		Interval time.Duration `envconfig:"HEALTH_CHECK_INTERVAL" default:"5m"`
+		Timeout  time.Duration `envconfig:"HEALTH_CHECK_TIMEOUT" default:"500ms"`
 	}
 
 	// ServerOption is a function to provide additional options for server.
@@ -106,13 +108,13 @@ func NewServer(m map[string]Checker, opts ...ServerOption) *MServer {
 	}
 	// default if not set
 	if srv.conf.Interval == 0 {
-		srv.conf.Interval = 60 * time.Second
+		srv.conf.Interval = 5 * time.Minute
 	}
 	if srv.log == nil {
 		srv.log = log.Root()
 	}
 	if srv.conf.Timeout == 0 {
-		srv.conf.Timeout = 1 * time.Second
+		srv.conf.Timeout = 500 * time.Millisecond
 	}
 	srv.ticker = time.NewTicker(srv.conf.Interval)
 
@@ -151,17 +153,23 @@ func (s *MServer) Init(status Status) error {
 func (s *MServer) checkAll() {
 	logger := s.log.Fields(log.CorrelationID, uuid.New().String())
 	bg := time.Now()
-	overall := StatusServing
+	overall := int32(StatusServing)
+	wg := sync.WaitGroup{}
+	wg.Add(len(s.checks))
 	for service, check := range s.checks {
-		status := StatusServing
-		if err := s.check(service, check); err != nil {
-			overall = StatusNotServing
-			status = StatusNotServing
-			logger.Infof("health check failed, service: %s, err: %v", service, err)
-		}
-		s.server.SetServingStatus(service, status)
+		go func(service string, check Checker) {
+			defer wg.Done()
+			status := StatusServing
+			if err := s.check(service, check); err != nil {
+				atomic.StoreInt32(&overall, int32(StatusNotServing))
+				status = StatusNotServing
+				logger.Infof("health check failed, service: %s, err: %v", service, err)
+			}
+			s.server.SetServingStatus(service, status)
+		}(service, check)
 	}
-	s.server.SetServingStatus(OverallServiceName, overall)
+	wg.Wait()
+	s.SetStatus(OverallServiceName, Status(overall))
 	logger.Fields("status", overall, "duration", time.Since(bg)).Info("health check completed")
 }
 

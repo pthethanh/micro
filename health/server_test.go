@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 	"time"
 
@@ -19,19 +20,26 @@ import (
 
 func TestHealthCheck(t *testing.T) {
 	// init, make service 1 ok, service 2 and 3 not ok
-	dSrv := 1 * time.Second
 	errSrv := errors.New("down")
+	m := sync.Map{}
+	m.Store("error", errSrv)
+	m.Store("sleep", int(100*time.Second))
 	srv := health.NewServer(map[string]health.Checker{
 		"pkg.v1.MyService1": health.CheckFunc(func(ctx context.Context) error {
 			// ok
 			return nil
 		}),
 		"pkg.v1.MyService2": health.CheckFunc(func(ctx context.Context) error {
-			time.Sleep(dSrv)
+			d, _ := m.Load("sleep")
+			time.Sleep(time.Duration(d.(int)))
 			return nil
 		}),
 		"pkg.v1.MyService3": health.CheckFunc(func(ctx context.Context) error {
-			return errSrv
+			err, _ := m.Load("error")
+			if err == nil {
+				return nil
+			}
+			return err.(error)
 		}),
 	}, health.Interval(500*time.Millisecond), health.Timeout(200*time.Millisecond))
 	srv.Init(health.StatusServing)
@@ -100,10 +108,9 @@ func TestHealthCheck(t *testing.T) {
 	testGRPC("pkg.v1.MyService2", health.StatusNotServing)
 	testGRPC("pkg.v1.MyService3", health.StatusNotServing)
 	testHTTP(health.StatusNotServing)
-
 	// make all services ok.
-	dSrv = 0
-	errSrv = nil
+	m.Store("sleep", 0)
+	m.Store("error", nil)
 	// wait for next circle before checking
 	time.Sleep(500 * time.Millisecond)
 	testGRPC("", health.StatusServing)
