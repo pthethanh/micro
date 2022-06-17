@@ -13,7 +13,9 @@ export PATH := $(GOPATH)/bin:$(PATH)
 
 .SILENT:
 
-all: mod_tidy fmt vet test_stress build_plugins
+all: mod_tidy fmt vet test build_plugins
+
+stress: mod_tidy fmt vet test_stress build_plugins
 
 micro: mod_tidy fmt vet test
 
