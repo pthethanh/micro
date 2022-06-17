@@ -51,7 +51,7 @@ func TestHealthCheck(t *testing.T) {
 	defer lis.Close()
 	srv.Register(server)
 	go func() {
-		if err := server.Serve(lis); err != nil {
+		if err := server.Serve(lis); err != nil && err != net.ErrClosed {
 			panic(err)
 		}
 	}()

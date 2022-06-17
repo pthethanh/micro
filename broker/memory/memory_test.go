@@ -11,7 +11,7 @@ import (
 )
 
 func TestBroker(t *testing.T) {
-	b := memory.New()
+	b := memory.New(memory.Worker(100, 1000))
 	defer b.Close(context.Background())
 	type Person struct {
 		Name string

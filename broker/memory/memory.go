@@ -3,6 +3,7 @@ package memory
 
 import (
 	"context"
+	"errors"
 	"math/rand"
 	"sync"
 	"sync/atomic"
@@ -21,7 +22,9 @@ type (
 		mu     *sync.RWMutex
 		ch     chan func() error
 		worker int
+		buf    int
 		wg     *sync.WaitGroup
+		opened bool
 	}
 
 	subscriber struct {
@@ -37,11 +40,16 @@ type (
 		t   string
 		msg *broker.Message
 	}
+
+	Option func(*Broker)
 )
 
 var (
 	_ broker.Broker  = (*Broker)(nil)
 	_ health.Checker = (*Broker)(nil)
+
+	// ErrInvalidConnectionState indicate that the connection has not been opened properly.
+	ErrInvalidConnectionState = errors.New("invalid connection state")
 )
 
 func init() {
@@ -49,14 +57,19 @@ func init() {
 }
 
 // New return new memory broker.
-func New() *Broker {
-	return &Broker{
+func New(opts ...Option) *Broker {
+	br := &Broker{
 		subs:   make(map[string][]*subscriber),
 		mu:     &sync.RWMutex{},
-		ch:     make(chan func() error, 10000),
 		worker: 100,
+		buf:    10_000,
 		wg:     &sync.WaitGroup{},
 	}
+	for _, opt := range opts {
+		opt(br)
+	}
+	br.ch = make(chan func() error, br.buf)
+	return br
 }
 
 func (env *event) Topic() string {
@@ -100,11 +113,15 @@ func (br *Broker) Open(ctx context.Context) error {
 		}()
 	}
 	wg.Wait()
+	br.opened = true
 	return nil
 }
 
 // Publish implements broker.Broker interface.
 func (br *Broker) Publish(ctx context.Context, topic string, m *broker.Message, opts ...broker.PublishOption) error {
+	if !br.opened {
+		return ErrInvalidConnectionState
+	}
 	br.mu.RLock()
 	subs := br.subs[topic]
 	br.mu.RUnlock()
@@ -134,6 +151,9 @@ func (br *Broker) Publish(ctx context.Context, topic string, m *broker.Message, 
 
 // Subscribe implements broker.Broker interface.
 func (br *Broker) Subscribe(ctx context.Context, topic string, h broker.Handler, opts ...broker.SubscribeOption) (broker.Subscriber, error) {
+	if !br.opened {
+		return nil, ErrInvalidConnectionState
+	}
 	subOpts := &broker.SubscribeOptions{}
 	subOpts.Apply(opts...)
 	newSub := &subscriber{
@@ -164,12 +184,15 @@ func (br *Broker) Subscribe(ctx context.Context, topic string, h broker.Handler,
 
 // CheckHealth implements health.Checker interface.
 func (br *Broker) CheckHealth(ctx context.Context) error {
-	// do nothing.
+	if !br.opened {
+		return ErrInvalidConnectionState
+	}
 	return nil
 }
 
 // Close implements broker.Broker interface.
 func (br *Broker) Close(ctx context.Context) error {
+	br.opened = false
 	close(br.ch)
 	syncutil.WaitCtx(ctx, 10*time.Millisecond, func(ctx context.Context) {
 		br.wg.Wait()

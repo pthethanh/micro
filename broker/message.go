@@ -23,8 +23,10 @@ const (
 
 // NewMessage create new message from the given information.
 // Message type will be automatically retrieved.
-// ContentType is codec name: json, proto,... which is already registered
-// in advance via encoding.RegisterCodec.
+// ContentType is standard content type like: application/json, application/proto.
+// Or it can be codec name: json, proto,...
+// But in both cases, the sub-content type or codec should be registered in advance
+// via encoding.RegisterCodec so that it can be used for encoding/decoding the message body.
 func NewMessage(message any, contentType string, headers ...string) (*Message, error) {
 	if contentType == "" {
 		contentType = applicationJSON
