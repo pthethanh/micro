@@ -4,9 +4,6 @@ package main
 import (
 	"context"
 
-	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	"google.golang.org/grpc"
-
 	"github.com/pthethanh/micro/config"
 	pb "github.com/pthethanh/micro/examples/helloworld/helloworld"
 	"github.com/pthethanh/micro/log"
@@ -29,16 +26,6 @@ func (s *service) SayHello(ctx context.Context, req *pb.HelloRequest) (*pb.Hello
 	return &pb.HelloReply{
 		Message: "Hello " + req.GetName(),
 	}, nil
-}
-
-// Register implements server.Service interface.
-func (s *service) Register(srv *grpc.Server) {
-	pb.RegisterGreeterServer(srv, s)
-}
-
-// RegisterWithEndpoint implements server.EndpointService interface.
-func (s *service) RegisterWithEndpoint(ctx context.Context, mux *runtime.ServeMux, addr string, opts []grpc.DialOption) {
-	pb.RegisterGreeterHandlerFromEndpoint(ctx, mux, addr, opts)
 }
 
 func main() {

@@ -18,6 +18,7 @@ import (
 	"github.com/pthethanh/micro/auth"
 	"github.com/pthethanh/micro/health"
 	"github.com/pthethanh/micro/log"
+	"github.com/pthethanh/micro/status"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 
@@ -74,6 +75,11 @@ type (
 		Register(srv *grpc.Server)
 	}
 
+	// ServiceDescriptor implements grpc service that expose its service desc.
+	ServiceDescriptor interface {
+		ServiceDesc() *grpc.ServiceDesc
+	}
+
 	// EndpointService implement an endpoint registration interface for service to attach their endpoints to gRPC gateway.
 	EndpointService interface {
 		RegisterWithEndpoint(ctx context.Context, mux *runtime.ServeMux, addr string, opts []grpc.DialOption)
@@ -103,7 +109,7 @@ func New(ops ...Option) *Server {
 }
 
 // ListenAndServe call ListenAndServeContext with background context.
-func (server *Server) ListenAndServe(services ...Service) error {
+func (server *Server) ListenAndServe(services ...any) error {
 	return server.ListenAndServeContext(context.Background(), services...)
 }
 
@@ -112,7 +118,7 @@ func (server *Server) ListenAndServe(services ...Service) error {
 // its endpoints will be registered to the HTTP Server running on the same port.
 // The server starts with default metrics and health endpoints.
 // If the context is canceled or times out, the gRPC server will attempt a graceful shutdown.
-func (server *Server) ListenAndServeContext(ctx context.Context, services ...Service) error {
+func (server *Server) ListenAndServeContext(ctx context.Context, services ...any) error {
 	if server.lis == nil {
 		lis, err := net.Listen("tcp", server.address)
 		if err != nil {
@@ -168,9 +174,20 @@ func (server *Server) ListenAndServeContext(ctx context.Context, services ...Ser
 	services = append(services, server.healthSrv)
 
 	for _, s := range services {
-		s.Register(grpcServer)
-		if epSrv, ok := s.(EndpointService); ok {
-			epSrv.RegisterWithEndpoint(ctx, gw, server.address, dialOpts)
+		c := 0
+		if srv, ok := s.(Service); ok {
+			srv.Register(grpcServer)
+			c++
+		} else if srv, ok := s.(ServiceDescriptor); ok {
+			grpcServer.RegisterService(srv.ServiceDesc(), srv)
+			c++
+		}
+		if srv, ok := s.(EndpointService); ok {
+			srv.RegisterWithEndpoint(ctx, gw, server.address, dialOpts)
+			c++
+		}
+		if c == 0 {
+			return status.InvalidArgument("invalid service registration: %v, service should implement one of the interface: server.Service, server.ServiceDescriptor or server.EndpointService", s)
 		}
 	}
 	// Make sure Prometheus metrics are initialized.
