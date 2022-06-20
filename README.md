@@ -26,25 +26,70 @@ Currently micro comes with a collection of plugins that can be found [here](http
 
 ### Start your own
 
-Create new gRPC service
+Define your proto, an example can be found [here](https://github.com/pthethanh/micro/blob/master/examples/helloworld/helloworld/helloworld.proto):
+
+```proto
+syntax = "proto3";
+
+package helloworld;
+option go_package = "github.com/pthethanh/micro/examples/helloworld/helloworld;helloworld";
+
+import "google/api/annotations.proto";
+
+// The greeting service definition.
+service Greeter {
+  // Sends a greeting
+  rpc SayHello (HelloRequest) returns (HelloReply) {
+    option (google.api.http) = {
+      post: "/api/v1/hello"
+      body: "*"
+    };
+  }
+}
+
+// The request message containing the user's name.
+message HelloRequest {
+  string name = 1;
+}
+
+// The response message containing the greetings
+message HelloReply {
+  string message = 1;
+}
+```
+
+Generate boiler plate code with [protoc-gen-micro](https://github.com/pthethanh/micro/blob/master/cmd/protoc-gen-micro), an example can be found [here](https://github.com/pthethanh/micro/blob/master/Makefile#L63):
+```shell
+$(PROTOC_ENV) protoc -I $(PROTOC_INCLUDES) -I $(GOOGLE_APIS_PROTO) -I ./examples/helloworld/helloworld \
+	 --go_out $(PROTO_OUT) \
+	 --micro_out $(PROTO_OUT) \
+	 --micro_opt generate_gateway=true \
+	 --go-grpc_out $(PROTO_OUT) \
+	 --grpc-gateway_out $(PROTO_OUT) \
+     --grpc-gateway_opt logtostderr=true \
+     --grpc-gateway_opt generate_unbound_methods=true \
+     ./examples/helloworld/helloworld/helloworld.proto
+```
+
+Create new gRPC service, an example can be found [here](https://github.com/pthethanh/micro/blob/master/examples/helloworld/server/main.go)
 
 ```go
+type (
+	service struct {
+        // Embed the unimplemented server so that all the registration methods are available to the micro server.
+		pb.UnimplementedGreeterServer
+	}
+)
+
+// SayHello implements pb.GreeterServer interface.
 func (s *service) SayHello(ctx context.Context, req *pb.HelloRequest) (*pb.HelloReply, error) {
-    return &pb.HelloReply{
-        Message: "Hello " + req.GetName(),
-    }, nil
-}
-
-// Register implements server.Service interface
-// It registers gRPC APIs with gRPC server.
-func (s *service) Register(srv *grpc.Server) {
-    pb.RegisterGreeterServer(srv, s)
-}
-
-// RegisterWithEndpoint implements server.EndpointService interface
-// It is used to expose REST API using gRPC Gateway.
-func (s *service) RegisterWithEndpoint(ctx context.Context, mux *runtime.ServeMux, addr string, opts []grpc.DialOption) {
-    pb.RegisterGreeterHandlerFromEndpoint(ctx, mux, addr, opts)
+	log.Context(ctx).Info("name", req.Name)
+	if req.Name == "" {
+		return nil, status.InvalidArgument("name must not be empty")
+	}
+	return &pb.HelloReply{
+		Message: "Hello " + req.GetName(),
+	}, nil
 }
 ```
 

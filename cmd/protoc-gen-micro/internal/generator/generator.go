@@ -62,7 +62,7 @@ import (
 	plugin "google.golang.org/protobuf/types/pluginpb"
 )
 
-var DefaultGoFileExtension = ".pb.micro.go"
+var defaultGoFileExtension = ".pb.micro.go"
 
 // SupportedFeatures used to signaling that code generator supports proto3 optional
 // https://github.com/protocolbuffers/protobuf/blob/master/docs/implementing_proto3_presence.md#signaling-that-your-code-generator-supports-proto3-optional
@@ -307,12 +307,12 @@ func (d *FileDescriptor) goPackageOption() (impPath GoImportPath, pkg GoPackageN
 }
 
 // goFileName returns the output name for the generated Go file.
-func (d *FileDescriptor) goFileName(pathType pathType, moduleRoot string, ext string) string {
+func (d *FileDescriptor) goFileName(pathType pathType, moduleRoot string) string {
 	name := *d.Name
 	if ext := path.Ext(name); ext == ".proto" || ext == ".protodevel" {
 		name = name[:len(name)-len(ext)]
 	}
-	name += ext
+	name += defaultGoFileExtension
 
 	if pathType == pathTypeSourceRelative {
 		return name
@@ -435,8 +435,7 @@ type Generator struct {
 	pathType         pathType // How to generate output filenames.
 	writeOutput      bool
 
-	goFileExt  string
-	pluginList string
+	GenGW bool
 }
 
 type pathType int
@@ -448,17 +447,11 @@ const (
 )
 
 // New creates a new generator and allocates the request and response protobufs.
-func New(goFileExt string, plugins ...string) *Generator {
+func New() *Generator {
 	g := new(Generator)
 	g.Buffer = new(bytes.Buffer)
 	g.Request = new(plugin.CodeGeneratorRequest)
 	g.Response = new(plugin.CodeGeneratorResponse)
-	if goFileExt == "" {
-		goFileExt = DefaultGoFileExtension
-	}
-	g.goFileExt = goFileExt
-	g.pluginList = strings.Join(plugins, "+")
-
 	return g
 }
 
@@ -517,6 +510,8 @@ func (g *Generator) CommandLineParameters(parameter string) {
 			}
 		case "plugins":
 			pluginList = v
+		case "generate_gateway":
+			g.GenGW, _ = strconv.ParseBool(v)
 		default:
 			if len(k) > 0 && k[0] == 'M' {
 				g.ImportMap[k[1:]] = v
@@ -528,7 +523,6 @@ func (g *Generator) CommandLineParameters(parameter string) {
 		enabled := map[string]bool{
 			"micro": true,
 		}
-		pluginList += "+" + g.pluginList
 		for _, name := range strings.Split(pluginList, "+") {
 			enabled[name] = true
 		}
@@ -1101,7 +1095,7 @@ func (g *Generator) GenerateAllFiles() {
 		if !g.writeOutput {
 			continue
 		}
-		fname := file.goFileName(g.pathType, g.ModuleRoot, g.goFileExt)
+		fname := file.goFileName(g.pathType, g.ModuleRoot)
 		g.Response.File = append(g.Response.File, &plugin.CodeGeneratorResponse_File{
 			Name:    proto.String(fname),
 			Content: proto.String(g.String()),

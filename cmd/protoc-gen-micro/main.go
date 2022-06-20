@@ -52,8 +52,8 @@ import (
 	"io"
 	"os"
 
-	"github.com/pthethanh/micro/cmd/generator"
-	_ "github.com/pthethanh/micro/cmd/protoc-gen-micro/plugin/micro"
+	"github.com/pthethanh/micro/cmd/protoc-gen-micro/internal/generator"
+	_ "github.com/pthethanh/micro/cmd/protoc-gen-micro/internal/micro"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -61,8 +61,7 @@ func main() {
 	// Begin by allocating a generator. The request and response structures are stored there
 	// so we can do error handling easily - the response structure contains the field to
 	// report failure.
-	g := generator.New(".pb.micro.go")
-
+	g := generator.New()
 	data, err := io.ReadAll(os.Stdin)
 	if err != nil {
 		g.Error(err, "reading input")

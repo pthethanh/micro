@@ -11,6 +11,8 @@ import (
 )
 
 import (
+	"context"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	grpc "google.golang.org/grpc"
 )
 
@@ -21,4 +23,7 @@ var _ = math.Inf
 
 func (UnimplementedGreeterServer) ServiceDesc() *grpc.ServiceDesc {
 	return &Greeter_ServiceDesc
+}
+func (UnimplementedGreeterServer) RegisterWithEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) {
+	RegisterGreeterHandlerFromEndpoint(ctx, mux, endpoint, opts)
 }

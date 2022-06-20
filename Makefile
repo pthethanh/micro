@@ -64,7 +64,7 @@ gen_proto_examples: install_tools
 	$(PROTOC_ENV) protoc -I $(PROTOC_INCLUDES) -I $(GOOGLE_APIS_PROTO) -I ./examples/helloworld/helloworld \
 	 --go_out $(PROTO_OUT) \
 	 --micro_out $(PROTO_OUT) \
-	 --micro-gw_out $(PROTO_OUT) \
+	 --micro_opt generate_gateway=true \
 	 --go-grpc_out $(PROTO_OUT) \
 	 --grpc-gateway_out $(PROTO_OUT) \
      --grpc-gateway_opt logtostderr=true \

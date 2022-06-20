@@ -1,7 +1,7 @@
 package micro
 
 import (
-	"github.com/pthethanh/micro/cmd/generator"
+	"github.com/pthethanh/micro/cmd/protoc-gen-micro/internal/generator"
 	pb "google.golang.org/protobuf/types/descriptorpb"
 )
 
@@ -23,7 +23,6 @@ func (g *micro) Name() string {
 // Init initializes the plugin.
 func (g *micro) Init(gen *generator.Generator) {
 	g.gen = gen
-
 }
 
 // P forwards to g.gen.P.
@@ -46,6 +45,11 @@ func (g *micro) GenerateImports(file *generator.FileDescriptor, imports map[gene
 	}
 	g.P("import (")
 	g.P("grpc ", `"google.golang.org/grpc"`)
+	if g.gen.GenGW {
+		g.P(`"context"`)
+		g.P("grpc ", `"google.golang.org/grpc"`)
+		g.P(`"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"`)
+	}
 	g.P(")")
 	g.P()
 }
@@ -53,13 +57,19 @@ func (g *micro) GenerateImports(file *generator.FileDescriptor, imports map[gene
 // generateService generates all the code for the named service.
 func (g *micro) generateService(file *generator.FileDescriptor, service *pb.ServiceDescriptorProto, index int) {
 
-	origServName := service.GetName()
+	origServiceName := service.GetName()
 
-	servName := generator.CamelCase(origServName)
-	servAlias := "Unimplemented" + servName + "Server"
+	serviceName := generator.CamelCase(origServiceName)
+	serviceAlias := "Unimplemented" + serviceName + "Server"
 
-	g.P("func (", servAlias, ") ServiceDesc() *grpc.ServiceDesc{")
-	g.P("return &", servName, "_ServiceDesc")
+	g.P("func (", serviceAlias, ") ServiceDesc() *grpc.ServiceDesc{")
+	g.P("return &", serviceName, "_ServiceDesc")
 	g.P("}")
 
+	if g.gen.GenGW {
+		g.P()
+		g.P("func (", serviceAlias, ") RegisterWithEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption){")
+		g.P("Register" + serviceName + "HandlerFromEndpoint(ctx, mux, endpoint, opts)")
+		g.P("}")
+	}
 }
