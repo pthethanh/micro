@@ -24,6 +24,7 @@ var _ = math.Inf
 func (UnimplementedGreeterServer) ServiceDesc() *grpc.ServiceDesc {
 	return &Greeter_ServiceDesc
 }
+
 func (UnimplementedGreeterServer) RegisterWithEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) {
 	RegisterGreeterHandlerFromEndpoint(ctx, mux, endpoint, opts)
 }
