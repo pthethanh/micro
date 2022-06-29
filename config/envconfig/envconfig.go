@@ -19,7 +19,7 @@ type (
 )
 
 // Read implements config.Reader interface.
-func (env *Config) Read(ptr any, opts ...config.ReadOption) error {
+func (env *Config) Read(ptr interface{}, opts ...config.ReadOption) error {
 	ops := &config.ReadOptions{}
 	ops.Apply(opts...)
 	if ops.File != "" {

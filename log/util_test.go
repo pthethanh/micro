@@ -9,7 +9,7 @@ import (
 func TestMustJSON(t *testing.T) {
 	cases := []struct {
 		name string
-		v    any
+		v    interface{}
 		want string
 	}{
 		{

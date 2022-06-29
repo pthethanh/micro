@@ -30,7 +30,7 @@ func TestTagsToStructFields(t *testing.T) {
 
 	cases := []struct {
 		name  string
-		value any
+		value interface{}
 		tags  []string
 		want  []string
 	}{
@@ -105,7 +105,7 @@ func TestTagsToTags(t *testing.T) {
 
 	cases := []struct {
 		name  string
-		value any
+		value interface{}
 		src   string
 		dst   string
 		tags  []string

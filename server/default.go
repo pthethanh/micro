@@ -11,13 +11,13 @@ import (
 // ListenAndServe create a new server base on environment configuration (see server.Config)
 // and serve the services with background context.
 // See server.ListenAndServe for detail document.
-func ListenAndServe(services ...any) error {
+func ListenAndServe(services ...interface{}) error {
 	return ListenAndServeContext(context.Background(), services...)
 }
 
 // ListenAndServeContext create a new server base on environment configuration (see server.Config)
 // and serve the services with the given context.
 // See server.ListenAndServeContext for detail document.
-func ListenAndServeContext(ctx context.Context, services ...any) error {
+func ListenAndServeContext(ctx context.Context, services ...interface{}) error {
 	return New(FromEnv()).ListenAndServeContext(ctx, services...)
 }

@@ -5,7 +5,7 @@ import (
 )
 
 // ToMap convert a struct to a map.
-func ToMap[K comparable, V any](v any) (map[K]V, error) {
+func ToMap[K comparable, V interface{}](v interface{}) (map[K]V, error) {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return nil, err

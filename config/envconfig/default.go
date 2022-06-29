@@ -9,7 +9,7 @@ var (
 )
 
 // Read read configuration from environment to the target ptr.
-func Read(ptr any, opts ...config.ReadOption) error {
+func Read(ptr interface{}, opts ...config.ReadOption) error {
 	return defaultConf.Read(ptr, opts...)
 }
 

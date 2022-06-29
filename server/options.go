@@ -84,8 +84,7 @@ type (
 		// MetricsPath is API path for Prometheus metrics.
 		MetricsPath string `envconfig:"METRICS_PATH" default:"/internal/metrics"`
 
-		RoutesPrioritization bool   `envconfig:"ROUTES_PRIORITIZATION" default:"true"`
-		ShutdownHook         string `envconfig:"SHUTDOWN_HOOK"`
+		RoutesPrioritization bool `envconfig:"ROUTES_PRIORITIZATION" default:"true"`
 	}
 )
 
@@ -120,7 +119,6 @@ func FromConfig(conf Config) Option {
 			CORS(conf.CORSAllowedCredential, conf.CORSAllowedHeaders, conf.CORSAllowedMethods, conf.CORSAllowedOrigins),
 			ShutdownTimeout(conf.ShutdownTimeout),
 			RoutesPrioritization(conf.RoutesPrioritization),
-			ShutdownHook(conf.ShutdownHook),
 		}
 		if conf.Metrics {
 			opts = append(opts, Metrics(conf.MetricsPath))
@@ -392,7 +390,7 @@ func Web(pathPrefix, dir, index string) Option {
 // Recovery is an option allows user to add an ability to recover a handler/API from a panic.
 // This applies for both unary and stream handlers/APIs.
 // If the provided error handler is nil, a default error handler will be used.
-func Recovery(handler func(context.Context, any) error) Option {
+func Recovery(handler func(context.Context, interface{}) error) Option {
 	return func(opts *Server) {
 		if handler == nil {
 			if opts.log == nil {
@@ -511,29 +509,10 @@ func StreamTracing(tracer opentracing.Tracer) Option {
 	return StreamInterceptors(otgrpc.OpenTracingStreamServerInterceptor(tracer))
 }
 
-// ShutdownHook expose an API for shutdown the server remotely.
-//
-// WARNING: this is an experiment API and
-// it should be enabled only in development mode for live reload.
-func ShutdownHook(path string) Option {
-	return func(opts *Server) {
-		// do nothing if path is empty.
-		if path == "" {
-			return
-		}
-		hopt := HandlerOptions{}
-		hopt.p = path
-		hopt.h = http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-			opts.Shutdown(context.Background())
-		})
-		opts.routes = append(opts.routes, hopt)
-	}
-}
-
 // recoveryHandler print the context log to the configured writer and return
 // a general error to the caller.
-func recoveryHandler(l log.Logger) func(context.Context, any) error {
-	return func(ctx context.Context, p any) error {
+func recoveryHandler(l log.Logger) func(context.Context, interface{}) error {
+	return func(ctx context.Context, p interface{}) error {
 		l.Context(ctx).Errorf("server: panic recovered, err: %v", p)
 		return status.Errorf(codes.Internal, codes.Internal.String())
 	}

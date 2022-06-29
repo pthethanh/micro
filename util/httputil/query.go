@@ -41,13 +41,13 @@ func NewQueryEncoder(tag string) *QueryEncoder {
 //
 // The second parameter is a map, typically url.Values from an HTTP request.
 // Keys are "paths" in dotted notation to the struct fields and nested structs.
-func DecodeQuery(dst any, src map[string][]string) error {
+func DecodeQuery(dst interface{}, src map[string][]string) error {
 	return NewQueryDecoder(defaultQueryTag).Decode(dst, src)
 }
 
 // EncodeQuery encodes a struct into map[string][]string.
 //
 // Intended for use with url.Values.
-func EncodeQuery(src any, dst map[string][]string) error {
+func EncodeQuery(src interface{}, dst map[string][]string) error {
 	return NewQueryEncoder(defaultQueryTag).Encode(src, dst)
 }

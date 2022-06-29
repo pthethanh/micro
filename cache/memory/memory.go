@@ -96,7 +96,7 @@ func (m *Memory) clean() {
 	for {
 		select {
 		case <-tik.C:
-			m.values.Range(func(k, v any) bool {
+			m.values.Range(func(k, v interface{}) bool {
 				val := v.(value)
 				if val.expired() {
 					m.values.Delete(k)

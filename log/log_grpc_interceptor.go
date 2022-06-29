@@ -15,13 +15,13 @@ import (
 // in the metadata of the incoming request. If no value is provided, a new UUID will be generated.
 // For REST API via gRPC Gateway, pass the value of X-Correlation-ID or X-Request-ID in the header.
 func StreamInterceptor(l Logger) grpc.StreamServerInterceptor {
-	return func(srv any, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 		correlationID, _ := contextutil.CorrelationIDFromContext(ss.Context())
 		logger := l.Fields(CorrelationID, correlationID, "method", info.FullMethod)
 		newCtx := NewContext(ss.Context(), logger)
 		wrapped := grpc_middleware.WrapServerStream(ss)
 		wrapped.WrappedContext = newCtx
-		_, err := runWithLog(logger, info.FullMethod, func() (any, error) {
+		_, err := runWithLog(logger, info.FullMethod, func() (interface{}, error) {
 			err := handler(srv, wrapped)
 			return nil, err
 		})
@@ -34,17 +34,17 @@ func StreamInterceptor(l Logger) grpc.StreamServerInterceptor {
 // in the metadata of the incoming request. If no value is provided, a new UUID will be generated.
 // For REST API via gRPC Gateway, pass the value of X-Correlation-ID or X-Request-ID in the header.
 func UnaryInterceptor(l Logger) grpc.UnaryServerInterceptor {
-	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
+	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 		correlationID, _ := contextutil.CorrelationIDFromContext(ctx)
 		logger := l.Fields(CorrelationID, correlationID, "method", info.FullMethod)
 		newCtx := NewContext(ctx, logger)
-		return runWithLog(logger, info.FullMethod, func() (any, error) {
+		return runWithLog(logger, info.FullMethod, func() (interface{}, error) {
 			return handler(newCtx, req)
 		})
 	}
 }
 
-func runWithLog(logger Logger, method string, f func() (any, error)) (any, error) {
+func runWithLog(logger Logger, method string, f func() (interface{}, error)) (interface{}, error) {
 	bg := time.Now()
 	logger.Fields("phase", "request").Info("request started")
 	res, err := f()

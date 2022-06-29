@@ -109,7 +109,7 @@ func New(ops ...Option) *Server {
 }
 
 // ListenAndServe call ListenAndServeContext with background context.
-func (server *Server) ListenAndServe(services ...any) error {
+func (server *Server) ListenAndServe(services ...interface{}) error {
 	return server.ListenAndServeContext(context.Background(), services...)
 }
 
@@ -118,7 +118,7 @@ func (server *Server) ListenAndServe(services ...any) error {
 // its endpoints will be registered to the HTTP Server running on the same port.
 // The server starts with default metrics and health endpoints.
 // If the context is canceled or times out, the gRPC server will attempt a graceful shutdown.
-func (server *Server) ListenAndServeContext(ctx context.Context, services ...any) error {
+func (server *Server) ListenAndServeContext(ctx context.Context, services ...interface{}) error {
 	if server.lis == nil {
 		lis, err := net.Listen("tcp", server.address)
 		if err != nil {
@@ -338,7 +338,7 @@ func (server *Server) registerHTTPHandlers(ctx context.Context, router *mux.Rout
 	for _, r := range server.routes {
 		var route *mux.Route
 		h := r.h
-		info := make([]any, 0)
+		info := make([]interface{}, 0)
 		for _, interceptor := range r.interceptors {
 			h = interceptor(h)
 		}

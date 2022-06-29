@@ -17,7 +17,7 @@ type (
 	Reader interface {
 		// Read read the configuration into the given struct (ptr).
 		// The provided struct should be a pointer.
-		Read(ptr any, options ...ReadOption) error
+		Read(ptr interface{}, options ...ReadOption) error
 
 		// Close close the underlying source.
 		Close() error
