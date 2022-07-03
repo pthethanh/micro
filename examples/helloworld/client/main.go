@@ -26,9 +26,9 @@ func main() {
 	name := flag.String("name", "Jack", "Name for greeting")
 	flag.Parse()
 
-	log.Init(log.FromEnv(config.WithFileNoError(".env")))
+	log.Init(log.FromEnv(config.WithFile(".env")))
 
-	conf := client.ReadConfigFromEnv(config.WithFileNoError(".env"))
+	conf := client.ReadConfigFromEnv(config.WithFile(".env"))
 	conn := client.Must(client.Dial("", client.DialOptionsFromConfig(conf)...))
 	c := pb.NewGreeterClient(conn)
 	rep, err := c.SayHello(client.NewTracingContext(context.Background(), *correlationID), &pb.HelloRequest{

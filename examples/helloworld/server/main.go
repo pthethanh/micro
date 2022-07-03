@@ -29,11 +29,11 @@ func (s *service) SayHello(ctx context.Context, req *pb.HelloRequest) (*pb.Hello
 }
 
 func main() {
-	log.Init(log.FromEnv(config.WithFileNoError(".env")))
+	log.Init(log.FromEnv(config.WithFile(".env")))
 
 	srv := &service{}
 	if err := server.New(
-		server.FromEnv(config.WithFileNoError(".env")),
+		server.FromEnv(config.WithFile(".env")),
 	).ListenAndServe(srv); err != nil {
 		log.Panic(err)
 	}

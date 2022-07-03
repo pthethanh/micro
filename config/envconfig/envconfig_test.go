@@ -60,23 +60,6 @@ func TestReadConfig(t *testing.T) {
 				Secret:    "",
 			},
 		},
-		{
-			name:    "load from env and env file, no error",
-			prepare: func() {},
-			do: func() (myConfig, error) {
-				conf := myConfig{}
-				if err := envconfig.Read(&conf, config.WithFileNoError("testdata/micro.env")); err != nil {
-					return conf, err
-				}
-				return conf, nil
-			},
-			want: myConfig{
-				Name:      "micro",
-				Address:   "1.1.1.1:8080",
-				Instances: 0,
-				Secret:    "",
-			},
-		},
 	}
 
 	for _, c := range cases {

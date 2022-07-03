@@ -91,7 +91,9 @@ type (
 // ReadConfigFromEnv read the server configuration from environment variables.
 func ReadConfigFromEnv(opts ...config.ReadOption) Config {
 	conf := Config{}
-	envconfig.Read(&conf, opts...)
+	if err := envconfig.Read(&conf, opts...); err != nil {
+		log.Errorf("server: failed to read config, err: %v", err)
+	}
 	conf.Address = GetAddressFromEnv()
 	return conf
 }

@@ -5,6 +5,7 @@ package envconfig
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 
@@ -24,11 +25,8 @@ func (env *Config) Read(ptr interface{}, opts ...config.ReadOption) error {
 	ops.Apply(opts...)
 	if ops.File != "" {
 		if err := loadEnvFromFile(ops.File); err != nil {
-			return err
+			log.Printf("[ERROR] failed to read env config from file, err: %v\n", err)
 		}
-	}
-	if ops.FileNoErr != "" {
-		_ = loadEnvFromFile(ops.FileNoErr)
 	}
 	return envconfig.Process(ops.Prefix, ptr)
 }

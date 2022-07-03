@@ -6,8 +6,6 @@ type (
 	ReadOptions struct {
 		Prefix string
 		File   string
-		// Same as File but ignore error.
-		FileNoErr string
 	}
 
 	// ReadOption is a helper setting ReadOptions.
@@ -32,17 +30,10 @@ func WithPrefix(prefix string) ReadOption {
 }
 
 // WithFile is an option allow the reader read configuration from a file.
-// If the file is not found, error will return.
+// If the file is not found or cannot opened, the error should be logged.
 func WithFile(f string) ReadOption {
 	return func(o *ReadOptions) {
 		o.File = f
-	}
-}
-
-// WithFileNoError same as WithFile but ignore error while reading the file.
-func WithFileNoError(f string) ReadOption {
-	return func(o *ReadOptions) {
-		o.FileNoErr = f
 	}
 }
 
