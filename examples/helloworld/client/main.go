@@ -29,7 +29,7 @@ func main() {
 	log.Init(log.FromEnv(config.WithFile(".env")))
 
 	conf := client.ReadConfigFromEnv(config.WithFile(".env"))
-	conn := client.Must(client.Dial("", client.DialOptionsFromConfig(conf)...))
+	conn := client.Must(client.Dial("", client.WithConfig(conf)...))
 	c := pb.NewGreeterClient(conn)
 	rep, err := c.SayHello(client.NewTracingContext(context.Background(), *correlationID), &pb.HelloRequest{
 		Name: *name,

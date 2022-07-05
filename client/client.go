@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
 	"github.com/opentracing/opentracing-go"
 	"github.com/pthethanh/micro/auth/jwt"
@@ -44,13 +45,13 @@ func ReadConfigFromEnv(opts ...config.ReadOption) *Config {
 	return &conf
 }
 
-// DialOptionsFromEnv return dial options from environment variables.
-func DialOptionsFromEnv(opts ...config.ReadOption) []grpc.DialOption {
-	return DialOptionsFromConfig(ReadConfigFromEnv(opts...))
+// WithEnvConfig return dial options from environment variables.
+func WithEnvConfig(opts ...config.ReadOption) []grpc.DialOption {
+	return WithConfig(ReadConfigFromEnv(opts...))
 }
 
-// DialOptionsFromConfig return dial options from the given configuration.
-func DialOptionsFromConfig(conf *Config) []grpc.DialOption {
+// WithConfig return dial options from the given configuration.
+func WithConfig(conf *Config) []grpc.DialOption {
 	opts := make([]grpc.DialOption, 0)
 	if conf.JWTToken != "" {
 		opts = append(opts, WithJWTCredentials(conf.JWTToken))
@@ -169,7 +170,7 @@ func NewContext(ctx context.Context, kv ...string) context.Context {
 // NOTE: that this function has nothing to do with tracing using opentracing.
 func NewTracingContext(ctx context.Context, correlationID string) context.Context {
 	if correlationID == "" {
-		return NewContext(ctx)
+		correlationID = uuid.NewString()
 	}
 	return NewContext(ctx, contextutil.XCorrelationID, correlationID)
 }
