@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/pthethanh/micro/util/contextutil"
 	"github.com/sirupsen/logrus"
 )
 
@@ -127,12 +128,19 @@ func (l *Logrus) Context(ctx context.Context) Logger {
 	if ctx == nil {
 		return l
 	}
+	// return if there's a logger inside the context
+	// mostly through the interceptor.
 	if logger, ok := ctx.Value(loggerKey).(Logger); ok {
 		kv := make([]interface{}, 0)
 		for k, v := range l.logger.Data {
 			kv = append(kv, k, v)
 		}
 		return logger.Fields(kv...)
+	}
+	// if it's not a context logger, try to extract correlation_id from the context
+	// for tracing purpose.
+	if correlationID, ok := contextutil.CorrelationIDFromContext(ctx); ok {
+		return l.Fields(contextutil.XCorrelationID, correlationID)
 	}
 	return l
 }

@@ -45,8 +45,8 @@ func ReadConfigFromEnv(opts ...config.ReadOption) *Config {
 	return &conf
 }
 
-// WithEnvConfig return dial options from environment variables.
-func WithEnvConfig(opts ...config.ReadOption) []grpc.DialOption {
+// WithConfigFromEnv return dial options from environment variables.
+func WithConfigFromEnv(opts ...config.ReadOption) []grpc.DialOption {
 	return WithConfig(ReadConfigFromEnv(opts...))
 }
 
