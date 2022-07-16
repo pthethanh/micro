@@ -1,11 +1,11 @@
-package reflectutil_test
+package tags_test
 
 import (
+	"errors"
 	"sort"
 	"testing"
 
-	"github.com/pthethanh/micro/util/reflectutil"
-	"golang.org/x/exp/maps"
+	"github.com/pthethanh/micro/util/tags"
 )
 
 func TestTagsToStructFields(t *testing.T) {
@@ -27,6 +27,8 @@ func TestTagsToStructFields(t *testing.T) {
 	}{
 		Address2: &Address{},
 	}
+	// suppress unused fields
+	_ = v.Address1.Note.private
 
 	cases := []struct {
 		name  string
@@ -61,16 +63,14 @@ func TestTagsToStructFields(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			got := reflectutil.GetFieldNamesFromTags(reflectutil.GetFieldNamesFromTagsRequest{
-				Value:     c.value,
-				Tag:       "json",
-				Resolver:  reflectutil.FirstValueTagResolverFunc,
-				TagValues: c.tags,
-			})
+			got, err := tags.GetFieldNameMapping(c.value, "json", c.tags...)
+			if err != nil {
+				t.Error(err)
+			}
 			if len(got) != len(c.want) {
 				t.Errorf("got fields=%s, want fields=%s", got, c.want)
 			}
-			values := maps.Values(got)
+			values := got.Values()
 			sort.Strings(values)
 			sort.Strings(c.want)
 			for i := 0; i < len(got); i++ {
@@ -102,7 +102,8 @@ func TestTagsToTags(t *testing.T) {
 	}{
 		Address2: &Address{},
 	}
-
+	// suppress unused fields
+	_ = v.Address1.Note.private
 	cases := []struct {
 		name  string
 		value interface{}
@@ -140,18 +141,14 @@ func TestTagsToTags(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			got := reflectutil.GetTagsFromTags(reflectutil.GetTagsFromTagsRequest{
-				Value:       c.value,
-				SrcTag:      "json",
-				SrcResolver: reflectutil.FirstValueTagResolverFunc,
-				DstTag:      "bson",
-				DstResolver: reflectutil.FirstValueTagResolverFunc,
-				TagValues:   c.tags,
-			})
+			got, err := tags.GetTagMapping(c.value, "json", "bson", c.tags...)
+			if err != nil {
+				t.Error(err)
+			}
 			if len(got) != len(c.want) {
 				t.Errorf("got tags=%s, want tags=%s", got, c.want)
 			}
-			values := maps.Values(got)
+			values := got.Values()
 			sort.Strings(values)
 			sort.Strings(c.want)
 			for i := 0; i < len(got); i++ {
@@ -175,17 +172,15 @@ func TestTagsToFieldNamesNilValues(t *testing.T) {
 	}{
 		// all nil
 	}
-	got := reflectutil.GetFieldNamesFromTags(reflectutil.GetFieldNamesFromTagsRequest{
-		Value:     &v,
-		Tag:       "json",
-		Resolver:  reflectutil.FirstValueTagResolverFunc,
-		TagValues: []string{"name", "address", "address.home", "address.work"},
-	})
+	got, err := tags.GetFieldNameMapping(&v, "json", "name", "address", "address.home", "address.work")
+	if err != nil {
+		t.Error(err)
+	}
 	want := []string{"Name", "Address"}
 	if len(got) != len(want) {
 		t.Fatalf("got fields=%s, want fields=%s", got, want)
 	}
-	values := maps.Values(got)
+	values := got.Values()
 	sort.Strings(values)
 	sort.Strings(want)
 	for i := 0; i < len(got); i++ {
@@ -196,9 +191,10 @@ func TestTagsToFieldNamesNilValues(t *testing.T) {
 	}
 
 	// pass nil value
-	got = reflectutil.GetFieldNamesFromTags(reflectutil.GetFieldNamesFromTagsRequest{
-		Value: nil,
-	})
+	got, err = tags.GetFieldNameMapping(nil, "")
+	if err != nil {
+		t.Error(err)
+	}
 	if len(got) != 0 {
 		t.Fatalf("pass nil value, got fields=%v, want fields=nil", got)
 	}
@@ -215,19 +211,15 @@ func TestTagsToTagsNilValues(t *testing.T) {
 	}{
 		// all nil
 	}
-	got := reflectutil.GetTagsFromTags(reflectutil.GetTagsFromTagsRequest{
-		Value:       &v,
-		SrcTag:      "json",
-		SrcResolver: reflectutil.FirstValueTagResolverFunc,
-		DstTag:      "bson",
-		DstResolver: reflectutil.FirstValueTagResolverFunc,
-		TagValues:   []string{"name", "address", "address.home", "address.work"},
-	})
+	got, err := tags.GetTagMapping(&v, "json", "bson", "name", "address", "address.home", "address.work")
+	if err != nil {
+		t.Error(err)
+	}
 	want := []string{"bname", "baddress"}
 	if len(got) != len(want) {
 		t.Fatalf("got tags=%s, want tags=%s", got, want)
 	}
-	values := maps.Values(got)
+	values := got.Values()
 	sort.Strings(values)
 	sort.Strings(want)
 	for i := 0; i < len(got); i++ {
@@ -238,8 +230,24 @@ func TestTagsToTagsNilValues(t *testing.T) {
 	}
 
 	// pass nil val
-	got = reflectutil.GetTagsFromTags(reflectutil.GetTagsFromTagsRequest{})
+	got, err = tags.GetTagMapping(nil, "json", "bson")
+	if err != nil {
+		t.Error(err)
+	}
 	if len(got) != 0 {
 		t.Fatalf("pass nil value, got tags=%v, want tags=nil", got)
+	}
+}
+
+func TestResolverNotFound(t *testing.T) {
+	if _, err := tags.GetFieldNameMapping(struct{}{}, "some_weird_tag", "test"); !errors.Is(err, tags.ErrResolverNotFound) {
+		t.Errorf("got err=%v, want err=%v", err, tags.ErrResolverNotFound)
+	}
+
+	if _, err := tags.GetTagMapping(struct{}{}, "some_weird_src_tag", "json"); !errors.Is(err, tags.ErrResolverNotFound) {
+		t.Errorf("got err=%v, want err=%v", err, tags.ErrResolverNotFound)
+	}
+	if _, err := tags.GetTagMapping(struct{}{}, "json", "some_weird_dst_tag"); !errors.Is(err, tags.ErrResolverNotFound) {
+		t.Errorf("got err=%v, want err=%v", err, tags.ErrResolverNotFound)
 	}
 }
