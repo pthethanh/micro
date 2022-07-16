@@ -14,9 +14,10 @@ type (
 	// Memory is an implementation of cache.Cacher
 	Memory struct {
 		interval time.Duration
-		values   *sync.Map
+		values   map[int]*sync.Map
 		exit     chan struct{}
 		opened   bool
+		shard    uint64
 	}
 	value struct {
 		val []byte
@@ -34,15 +35,27 @@ var (
 	ErrInvalidConnectionState = errors.New("invalid connection state")
 )
 
+const (
+	// offset64 FNVa offset basis. See https://en.wikipedia.org/wiki/Fowler–Noll–Vo_hash_function#FNV-1a_hash
+	offset64 uint64 = 14695981039346656037
+	// prime64 FNVa prime value. See https://en.wikipedia.org/wiki/Fowler–Noll–Vo_hash_function#FNV-1a_hash
+	prime64 uint64 = 1099511628211
+)
+
 // New return new memory cache.
 func New(opts ...Option) *Memory {
 	m := &Memory{
 		interval: 500 * time.Millisecond,
-		values:   &sync.Map{},
+		values:   make(map[int]*sync.Map),
 		exit:     make(chan struct{}),
+		shard:    5,
 	}
 	for _, opt := range opts {
 		opt(m)
+	}
+	// init shards
+	for i := 0; i < int(m.shard); i++ {
+		m.values[i] = &sync.Map{}
 	}
 	return m
 }
@@ -52,7 +65,8 @@ func (m *Memory) Get(ctx context.Context, key string) ([]byte, error) {
 	if !m.opened {
 		return nil, ErrInvalidConnectionState
 	}
-	if v, ok := m.values.Load(key); ok {
+
+	if v, ok := m.getShard(key).Load(key); ok {
 		val := v.(value)
 		// if cleaner has not done its job yet, go ahead to delete
 		if val.expired() {
@@ -77,7 +91,7 @@ func (m *Memory) Set(ctx context.Context, key string, val []byte, opts ...cache.
 	if opt.TTL != 0 {
 		v.exp = time.Now().Add(opt.TTL)
 	}
-	m.values.Store(key, v)
+	m.getShard(key).Store(key, v)
 	return nil
 }
 
@@ -86,26 +100,31 @@ func (m *Memory) Delete(ctx context.Context, key string) error {
 	if !m.opened {
 		return ErrInvalidConnectionState
 	}
-	m.values.Delete(key)
+	m.getShard(key).Delete(key)
 	return nil
 }
 
 func (m *Memory) clean() {
 	tik := time.NewTicker(m.interval)
 	defer tik.Stop()
-	for {
-		select {
-		case <-tik.C:
-			m.values.Range(func(k, v interface{}) bool {
-				val := v.(value)
-				if val.expired() {
-					m.values.Delete(k)
+	for i := 0; i < int(m.shard); i++ {
+		i := i
+		go func() {
+			for {
+				select {
+				case <-tik.C:
+					m.values[i].Range(func(k, v interface{}) bool {
+						val := v.(value)
+						if val.expired() {
+							m.values[i].Delete(k)
+						}
+						return true
+					})
+				case <-m.exit:
+					return
 				}
-				return true
-			})
-		case <-m.exit:
-			return
-		}
+			}
+		}()
 	}
 }
 
@@ -136,4 +155,17 @@ func (m *Memory) CheckHealth(ctx context.Context) error {
 		return ErrInvalidConnectionState
 	}
 	return nil
+}
+
+func (m *Memory) getShardIndex(key string) int {
+	var hash uint64 = offset64
+	for i := 0; i < len(key); i++ {
+		hash ^= uint64(key[i])
+		hash *= prime64
+	}
+	return int(hash % m.shard)
+}
+
+func (m *Memory) getShard(key string) *sync.Map {
+	return m.values[m.getShardIndex(key)]
 }
