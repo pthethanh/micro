@@ -21,7 +21,7 @@ type (
 	}
 	value struct {
 		val []byte
-		exp time.Time
+		exp *time.Time
 	}
 
 	Option func(*Memory)
@@ -48,7 +48,7 @@ func New(opts ...Option) *Memory {
 		interval: 500 * time.Millisecond,
 		values:   make(map[int]*sync.Map),
 		exit:     make(chan struct{}),
-		shard:    5,
+		shard:    10,
 	}
 	for _, opt := range opts {
 		opt(m)
@@ -65,7 +65,6 @@ func (m *Memory) Get(ctx context.Context, key string) ([]byte, error) {
 	if !m.opened {
 		return nil, ErrInvalidConnectionState
 	}
-
 	if v, ok := m.getShard(key).Load(key); ok {
 		val := v.(value)
 		// if cleaner has not done its job yet, go ahead to delete
@@ -89,7 +88,8 @@ func (m *Memory) Set(ctx context.Context, key string, val []byte, opts ...cache.
 		val: val,
 	}
 	if opt.TTL != 0 {
-		v.exp = time.Now().Add(opt.TTL)
+		t := time.Now().Add(opt.TTL)
+		v.exp = &t
 	}
 	m.getShard(key).Store(key, v)
 	return nil
@@ -129,10 +129,13 @@ func (m *Memory) clean() {
 }
 
 func (v value) expired() bool {
+	if v.exp == nil {
+		return false
+	}
 	if v.exp.IsZero() {
 		return false
 	}
-	return time.Now().After(v.exp)
+	return time.Now().After(*v.exp)
 }
 
 // Open make the cacher ready for using.
