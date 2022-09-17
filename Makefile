@@ -31,6 +31,9 @@ test_stress:
 test:
 	$(GO_BUILD_ENV) CGO_ENABLED=1 go test $(GO_FILES) -race -cover -count=1
 
+upgrade_deps:
+	$(GO_BUILD_ENV) go get -u ./...
+
 mod_tidy:
 	$(GO_BUILD_ENV) go mod tidy
 	$(GO_BUILD_ENV) go mod download

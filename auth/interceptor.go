@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware/v2"
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"

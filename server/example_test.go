@@ -7,10 +7,10 @@ import (
 	"github.com/pthethanh/micro/log"
 	"github.com/pthethanh/micro/server"
 
-	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/tracing"
+	tracing "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
 
-	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
-	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/tags"
+	recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
+	tags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 )
 

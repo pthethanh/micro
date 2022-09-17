@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/gorilla/handlers"
-	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
+	recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
 	"github.com/opentracing/opentracing-go"
