@@ -227,9 +227,11 @@ func (server *Server) ListenAndServeContext(ctx context.Context, services ...int
 	}
 	// register startup hooks using base context func as a trick...
 	server.httpSrv.BaseContext = func(l net.Listener) context.Context {
-		for _, f := range server.startupHooks {
-			go f()
-		}
+		defer func() {
+			for _, f := range server.startupHooks {
+				go f()
+			}
+		}()
 		return context.Background()
 	}
 	// register shutdown hooks...
