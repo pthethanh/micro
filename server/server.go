@@ -64,6 +64,8 @@ type (
 		// health checks
 		healthCheckPath string
 		healthSrv       health.Server
+		shutdownHooks   []func()
+		startupHooks    []func()
 	}
 
 	// Option is a configuration option.
@@ -222,6 +224,17 @@ func (server *Server) ListenAndServeContext(ctx context.Context, services ...int
 		Handler:      handler,
 		ReadTimeout:  server.readTimeout,
 		WriteTimeout: server.writeTimeout,
+	}
+	// register startup hooks using base context func as a trick...
+	server.httpSrv.BaseContext = func(l net.Listener) context.Context {
+		for _, f := range server.startupHooks {
+			go f()
+		}
+		return context.Background()
+	}
+	// register shutdown hooks...
+	for _, f := range server.shutdownHooks {
+		server.httpSrv.RegisterOnShutdown(f)
 	}
 	go func() {
 		if isSecured {

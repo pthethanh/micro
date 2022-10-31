@@ -511,6 +511,20 @@ func StreamTracing(tracer opentracing.Tracer) Option {
 	return StreamInterceptors(otgrpc.OpenTracingStreamServerInterceptor(tracer))
 }
 
+// ShutdownHooks register functions that would be called on shutdown.
+func ShutdownHooks(fs ...func()) Option {
+	return func(s *Server) {
+		s.shutdownHooks = fs
+	}
+}
+
+// StartupHooks register functions that would be called once the server started.
+func StartupHooks(fs ...func()) Option {
+	return func(s *Server) {
+		s.startupHooks = fs
+	}
+}
+
 // recoveryHandler print the context log to the configured writer and return
 // a general error to the caller.
 func recoveryHandler(l log.Logger) func(context.Context, interface{}) error {
