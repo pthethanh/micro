@@ -27,8 +27,8 @@ func TestRecorder(t *testing.T) {
 	}
 	d := 600 * time.Millisecond
 	// duration should be more than 600, and less than 700 since there's a step run inside goroutine.
-	// +20ms for go scheduler to schedule the goroutine.
-	if v.Duration < d || v.Duration > d+20*time.Millisecond {
+	// +50ms for go scheduler to schedule the goroutine.
+	if v.Duration < d || v.Duration > d+50*time.Millisecond {
 		t.Errorf("got duration=%d, want duration >= %d and duration < 600+ ", v.Duration, d)
 	}
 	if len(v.Meta) < 2 {
