@@ -8,7 +8,7 @@ import (
 	"github.com/pthethanh/micro/log"
 )
 
-//Interval is an option to set interval for health check.
+// Interval is an option to set interval for health check.
 func Interval(d time.Duration) ServerOption {
 	return func(srv *MServer) {
 		srv.conf.Interval = d
