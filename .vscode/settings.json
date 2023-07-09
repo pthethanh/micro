@@ -1,6 +1,8 @@
 {
     "gopls": {
-        "build.experimentalWorkspaceModule": true
+        "build.buildFlags": [
+            "-tags=integration_test"
+        ]
     },
     "cSpell.words": [
         "acked",
