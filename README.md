@@ -5,6 +5,8 @@
 
 Just a simple tool kit for building microservices.
 
+New version of micro is [nano](https://github.com/pthethanh/nano) which is available [here](https://github.com/pthethanh/nano).
+
 ## What is micro?
 
 micro is a Go tool kit for enterprise targeted for microservices or well designed monolith application. It doesn't aim to be a framework, but just a microservices tool kit/library for easily and quickly build API applications.
